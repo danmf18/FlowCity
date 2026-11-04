@@ -30,3 +30,5 @@ Thumbs.db
 
 # docker/mysql local data
 mysql-data/
+*.xlsx
+database/dados/
