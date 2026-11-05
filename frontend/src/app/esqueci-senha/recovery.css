@@ -1,0 +1,206 @@
+
+.recovery-page {
+    min-height: 100vh;
+    padding: 40px 20px;
+    background: #f3f5f8;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+/* CARTÃO PRINCIPAL */
+
+.recovery-card {
+    width: 100%;
+    max-width: 480px;
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 45px !important;
+    border: 1px solid #e8edf3;
+    box-shadow: 0 12px 40px rgba(16, 27, 45, 0.08) !important;
+}
+
+/* ÍCONE */
+
+.recovery-icon {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: #eaf0ff;
+    color: #2457c5;
+    font-size: 30px;
+    font-weight: 600;
+    border: 1px solid #dce6ff;
+}
+
+/* TÍTULO */
+
+.recovery-card h1 {
+    color: #101b2d;
+    font-size: 27px;
+    font-weight: 700;
+    letter-spacing: -0.7px;
+}
+
+/* DESCRIÇÃO */
+
+.recovery-description {
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.7;
+    margin-bottom: 28px !important;
+}
+
+/* LABEL */
+
+.recovery-card .form-label {
+    color: #263449;
+    font-size: 14px;
+    margin-bottom: 9px;
+}
+
+/* CAMPO DE E-MAIL */
+
+.recovery-input {
+    height: 52px;
+    padding: 0 16px;
+    border: 1px solid #dce2ea;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #101b2d;
+    font-size: 14px;
+    box-shadow: none !important;
+    transition: 0.2s ease;
+}
+
+.recovery-input::placeholder {
+    color: #a0aaba;
+}
+
+.recovery-input:focus {
+    border-color: #2457c5;
+    box-shadow: 0 0 0 3px rgba(36, 87, 197, 0.12) !important;
+    outline: none;
+}
+
+/* BOTÃO PRINCIPAL */
+
+.recovery-button {
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #2457c5;
+    color: #ffffff;
+    border: 1px solid #2457c5;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: 0.2s ease;
+}
+
+.recovery-button:hover {
+    background: #1b46a5;
+    border-color: #1b46a5;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.recovery-button:focus-visible {
+    outline: 3px solid rgba(36, 87, 197, 0.25);
+    outline-offset: 3px;
+}
+
+.recovery-button:disabled {
+    background: #8da8e5;
+    border-color: #8da8e5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* VOLTAR PARA LOGIN */
+
+.recovery-back {
+    color: #2457c5;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: 0.2s ease;
+}
+
+.recovery-back:hover {
+    color: #173d91;
+    text-decoration: underline;
+}
+
+/* E-MAIL EXIBIDO APÓS ENVIO */
+
+.recovery-email {
+    padding: 14px;
+    border-radius: 9px;
+    background: #f3f5f8;
+    color: #101b2d;
+    font-size: 14px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+/* BOTÃO DE UTILIZAR OUTRO E-MAIL */
+
+.recovery-resend {
+    min-height: 48px;
+    border: 1px solid #dce2ea;
+    border-radius: 9px;
+    color: #2457c5;
+    font-size: 14px;
+    font-weight: 600;
+    transition: 0.2s ease;
+}
+
+.recovery-resend:hover {
+    background: #f3f6fc;
+    border-color: #2457c5;
+    color: #173d91;
+}
+
+/* MENSAGENS */
+
+.recovery-card .alert {
+    border-radius: 9px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* RODAPÉ */
+
+.recovery-footer {
+    border-top: 1px solid #edf0f4;
+    color: #94a3b8;
+    font-size: 12px;
+    letter-spacing: 0.2px;
+}
+
+/* RESPONSIVIDADE */
+
+@media (max-width: 576px) {
+    .recovery-page {
+        padding: 25px 15px;
+    }
+
+    .recovery-card {
+        padding: 32px 23px !important;
+        border-radius: 14px;
+    }
+
+    .recovery-card h1 {
+        font-size: 23px;
+    }
+
+    .recovery-icon {
+        width: 66px;
+        height: 66px;
+        font-size: 26px;
+    }
+
+    .recovery-description {
+        font-size: 13px;
+    }
+}
