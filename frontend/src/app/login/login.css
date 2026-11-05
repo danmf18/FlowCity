@@ -124,7 +124,7 @@
 
 .input-person {
     border: 1px solid rgba(214, 214, 214, 0.788);
-
+    text-align: left;
     width: 400px;
     height: 48px;
     border-radius: 6px;
@@ -136,6 +136,18 @@
     width: 400px;
     height: 48px;
     border-radius: 6px;
+}
+
+input {
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+
+
+
+.input-div::placeholder{
+    padding-left: 10px;
 }
 
 .input-person2 {
