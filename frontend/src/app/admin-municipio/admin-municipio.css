@@ -1,0 +1,529 @@
+.municipal-dashboard {
+    --municipal-navy: #101b2d;
+    --municipal-blue: #2457c5;
+    --municipal-bg: #f3f5f8;
+    --municipal-text: #263449;
+    display: flex;
+    min-height: 100vh;
+    background: var(--municipal-bg);
+    color: var(--municipal-text);
+}
+
+.municipal-sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: var(--municipal-navy);
+    color: #fff;
+    padding: 26px 18px;
+    display: flex;
+    flex-direction: column;
+}
+
+.municipal-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #fff;
+    text-decoration: none;
+    padding: 0 8px 30px;
+}
+
+.municipal-brand-icon {
+    width: 42px;
+    height: 42px;
+    background: var(--municipal-blue);
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+}
+
+.municipal-brand strong,
+.municipal-brand span {
+    display: block;
+}
+
+.municipal-brand strong {
+    font-size: 19px;
+}
+
+.municipal-brand span {
+    color: #aab8cc;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.municipal-menu-label {
+    color: #8292aa;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    padding: 12px 10px;
+}
+
+.municipal-navigation {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.municipal-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 13px 12px;
+    color: #bdc8d8;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 13px;
+    transition: .2s;
+}
+
+.municipal-nav-link i {
+    font-size: 17px;
+}
+
+.municipal-nav-link:hover,
+.municipal-nav-link:focus {
+    background: #243650;
+    color: #fff;
+}
+
+.municipal-sidebar-bottom {
+    margin-top: auto;
+}
+
+.municipal-help {
+    background: #1b2b42;
+    border: 1px solid #34455d;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.municipal-help > i {
+    color: #7da6ff;
+    font-size: 20px;
+}
+
+.municipal-help strong {
+    display: block;
+    font-size: 13px;
+    margin-top: 9px;
+}
+
+.municipal-help p {
+    color: #aab8cc;
+    font-size: 11px;
+    line-height: 1.6;
+    margin: 7px 0 0;
+}
+
+.municipal-back {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #bdc8d8;
+    text-decoration: none;
+    padding: 10px;
+    font-size: 12px;
+}
+
+.municipal-main {
+    min-width: 0;
+    flex: 1;
+}
+
+.municipal-topbar {
+    min-height: 85px;
+    background: #fff;
+    border-bottom: 1px solid #e7ebf1;
+    padding: 15px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.municipal-topbar > div:first-child > span {
+    color: #7b8798;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.municipal-topbar h2 {
+    color: var(--municipal-navy);
+    font-size: 18px;
+    font-weight: 700;
+    margin: 5px 0 0;
+}
+
+.municipal-account {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--municipal-text);
+    text-decoration: none;
+}
+
+.municipal-avatar {
+    width: 39px;
+    height: 39px;
+    border-radius: 50%;
+    background: #eaf0fc;
+    color: var(--municipal-blue);
+    display: grid;
+    place-items: center;
+    font-size: 19px;
+}
+
+.municipal-account strong,
+.municipal-account span {
+    display: block;
+}
+
+.municipal-account strong {
+    font-size: 12px;
+}
+
+.municipal-account span {
+    font-size: 10px;
+    color: #8290a2;
+    margin-top: 3px;
+}
+
+.municipal-content {
+    padding: 30px 32px;
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+.municipal-page {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.municipal-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.municipal-heading > div > span {
+    color: var(--municipal-blue);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.municipal-heading h1 {
+    color: var(--municipal-navy);
+    font-size: 27px;
+    font-weight: 750;
+    margin: 7px 0;
+}
+
+.municipal-heading p {
+    color: #78869a;
+    font-size: 13px;
+    margin: 0;
+}
+
+.municipal-location,
+.municipal-readonly {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #eaf0fc;
+    color: #2457c5;
+    border-radius: 7px;
+    padding: 9px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.municipal-readonly {
+    background: #e9f6ee;
+    color: #198754;
+}
+
+.municipal-readonly.small {
+    font-size: 10px;
+    padding: 6px 8px;
+}
+
+.municipal-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.municipal-stat {
+    background: #fff;
+    border: 1px solid #e9edf2;
+    border-radius: 11px;
+    padding: 19px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.municipal-stat > div:first-child > span {
+    color: #748197;
+    font-size: 11px;
+}
+
+.municipal-stat h2 {
+    color: var(--municipal-navy);
+    font-size: 27px;
+    font-weight: 750;
+    margin: 10px 0 5px;
+}
+
+.municipal-stat p {
+    color: #8a96a6;
+    font-size: 10px;
+    margin: 0;
+}
+
+.municipal-stat-icon {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: 9px;
+    background: #eaf0fc;
+    color: var(--municipal-blue);
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+}
+
+.municipal-panel {
+    background: #fff;
+    border: 1px solid #e9edf2;
+    border-radius: 11px;
+    overflow: hidden;
+}
+
+.municipal-panel-heading {
+    padding: 20px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.municipal-panel-heading h2 {
+    color: var(--municipal-navy);
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 6px;
+}
+
+.municipal-panel-heading p {
+    color: #8591a2;
+    font-size: 11px;
+    margin: 0;
+}
+
+.municipal-panel-heading a {
+    color: var(--municipal-blue);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.municipal-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.municipal-table th {
+    background: #f8f9fb;
+    color: #758196;
+    font-size: 10px;
+    text-align: left;
+    font-weight: 700;
+    padding: 13px 20px;
+    white-space: nowrap;
+}
+
+.municipal-table td {
+    padding: 15px 20px;
+    color: #46546a;
+    border-top: 1px solid #edf0f4;
+}
+
+.municipal-status {
+    display: inline-block;
+    border-radius: 20px;
+    padding: 6px 9px;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.municipal-status.is-pending {
+    color: #946200;
+    background: #fff3d6;
+}
+
+.municipal-status.is-review {
+    color: #2457c5;
+    background: #eaf0fc;
+}
+
+.municipal-status.is-done {
+    color: #198754;
+    background: #e5f5eb;
+}
+
+.municipal-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    background: #eef4ff;
+    border: 1px solid #dce7fb;
+    border-radius: 10px;
+    padding: 17px;
+    color: #2457c5;
+}
+
+.municipal-notice > i {
+    font-size: 20px;
+    margin-top: 1px;
+}
+
+.municipal-notice strong {
+    display: block;
+    font-size: 12px;
+}
+
+.municipal-notice p {
+    color: #536783;
+    font-size: 11px;
+    line-height: 1.6;
+    margin: 5px 0;
+}
+
+.municipal-notice a {
+    color: #2457c5;
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.municipal-filters {
+    display: flex;
+    gap: 12px;
+    padding: 0 22px 18px;
+}
+
+.municipal-filters input,
+.municipal-filters select {
+    min-height: 40px;
+    border: 1px solid #dfe5ed;
+    border-radius: 7px;
+    padding: 0 12px;
+    color: #344258;
+    background: #fff;
+    font-size: 12px;
+    outline: none;
+}
+
+.municipal-filters input {
+    flex: 1;
+    min-width: 0;
+}
+
+.municipal-filters input:focus,
+.municipal-filters select:focus {
+    border-color: var(--municipal-blue);
+}
+
+@media (max-width: 1100px) {
+    .municipal-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 760px) {
+    .municipal-dashboard {
+        display: block;
+    }
+
+    .municipal-sidebar {
+        width: 100%;
+        min-width: 0;
+        padding: 15px;
+    }
+
+    .municipal-brand {
+        padding-bottom: 15px;
+    }
+
+    .municipal-menu-label,
+    .municipal-sidebar-bottom {
+        display: none;
+    }
+
+    .municipal-navigation {
+        flex-direction: row;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+
+    .municipal-nav-link {
+        flex: 0 0 auto;
+        font-size: 11px;
+        padding: 10px;
+    }
+
+    .municipal-topbar {
+        padding: 15px;
+    }
+
+    .municipal-topbar h2 {
+        font-size: 14px;
+    }
+
+    .municipal-account > div:last-child {
+        display: none;
+    }
+
+    .municipal-content {
+        padding: 22px 15px;
+    }
+
+    .municipal-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .municipal-heading h1 {
+        font-size: 23px;
+    }
+
+    .municipal-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .municipal-panel-heading {
+        padding: 16px;
+    }
+
+    .municipal-filters {
+        padding: 0 16px 16px;
+        flex-direction: column;
+    }
+
+    .municipal-table {
+        min-width: 650px;
+    }
+}
