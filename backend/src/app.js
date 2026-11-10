@@ -7,6 +7,7 @@ import { errorHandler } from "./middlewares/errorHandler.js";
 
 import healthRoutes from "./routes/healthRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import adminGeralRoutes from "./routes/adminGeralRoutes.js";
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.get("/", (request, response) => {
 
 app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/admin-geral", adminGeralRoutes);
 
 app.use(errorHandler);
 

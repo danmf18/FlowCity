@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -13,9 +14,20 @@ export default function Header() {
     const pathname = usePathname();
     const router = useRouter();
 
+    function obterDashboard(perfil) {
+        const dashboards = {
+            admin_geral: "/admin",
+            admin_municipal: "/admin-municipal",
+            cidadao: "/usuarios"
+        };
+
+        return dashboards[perfil] || "/";
+    }
+
     useEffect(() => {
         function verificarLogin() {
             const token = localStorage.getItem("token");
+
             const dadosUsuario =
                 localStorage.getItem("usuario") ||
                 localStorage.getItem("user");
@@ -33,6 +45,17 @@ export default function Header() {
 
         verificarLogin();
     }, [pathname]);
+
+    function acessarDashboard() {
+        if (!usuario) {
+            router.push("/login");
+            return;
+        }
+
+        setMenuAberto(false);
+
+        router.push(obterDashboard(usuario.perfil));
+    }
 
     function sair() {
         localStorage.removeItem("token");
@@ -53,6 +76,7 @@ export default function Header() {
 
     return (
         <header className="header">
+
             <div className="header-container">
 
                 <Link href="/" className="header-logo">
@@ -60,7 +84,9 @@ export default function Header() {
                         <i className="bi bi-shield-check"></i>
                     </span>
 
-                    <span>Alert<span>ABC</span></span>
+                    <span>
+                        Alert<span>ABC</span>
+                    </span>
                 </Link>
 
                 <button
@@ -68,28 +94,53 @@ export default function Header() {
                     onClick={() => setMenuAberto(!menuAberto)}
                     aria-label="Abrir menu"
                 >
-                    <i className={`bi ${menuAberto ? "bi-x-lg" : "bi-list"}`}></i>
+                    <i
+                        className={`bi ${
+                            menuAberto ? "bi-x-lg" : "bi-list"
+                        }`}
+                    ></i>
                 </button>
 
-                <nav className={`header-nav ${menuAberto ? "active" : ""}`}>
-                    <Link href="/" onClick={() => setMenuAberto(false)}>
+                <nav
+                    className={`header-nav ${
+                        menuAberto ? "active" : ""
+                    }`}
+                >
+
+                    <Link
+                        href="/"
+                        onClick={() => setMenuAberto(false)}
+                    >
                         Início
                     </Link>
 
-                    <Link href="/sobre" onClick={() => setMenuAberto(false)}>
+                    <Link
+                        href="/sobre"
+                        onClick={() => setMenuAberto(false)}
+                    >
                         Sobre
                     </Link>
 
-                    <Link href="/relatos" onClick={() => setMenuAberto(false)}>
+                    <Link
+                        href="/relatos"
+                        onClick={() => setMenuAberto(false)}
+                    >
                         Relatos
                     </Link>
 
                     {usuario ? (
+
                         <div className="header-user">
-                            <div className="header-user-info">
+
+                            <button
+                                type="button"
+                                className="header-user-info"
+                                onClick={acessarDashboard}
+                                title="Acessar meu painel"
+                            >
                                 <i className="bi bi-person-circle"></i>
                                 <span>{nomeUsuario}</span>
-                            </div>
+                            </button>
 
                             <button
                                 className="header-logout"
@@ -98,9 +149,13 @@ export default function Header() {
                                 <i className="bi bi-box-arrow-right"></i>
                                 Sair
                             </button>
+
                         </div>
+
                     ) : (
+
                         <div className="header-actions">
+
                             <Link
                                 href="/login"
                                 className="header-login"
@@ -116,11 +171,15 @@ export default function Header() {
                             >
                                 Cadastrar
                             </Link>
+
                         </div>
+
                     )}
+
                 </nav>
 
             </div>
+
         </header>
     );
 }
