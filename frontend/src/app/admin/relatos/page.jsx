@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -22,6 +23,25 @@ const situacoes = {
     Pendente: "Pendente",
     Aprovado: "Aprovado",
     Rejeitado: "Rejeitado"
+};
+
+const estilosMapa = {
+    claro: {
+        nome: "Claro",
+        url: "https://tiles.openfreemap.org/styles/bright"
+    },
+    escuro: {
+        nome: "Escuro",
+        url: "https://tiles.openfreemap.org/styles/dark"
+    },
+    liberty: {
+        nome: "Liberty",
+        url: "https://tiles.openfreemap.org/styles/liberty"
+    },
+    positron: {
+        nome: "Positron",
+        url: "https://tiles.openfreemap.org/styles/positron"
+    }
 };
 
 function formatarData(data) {
@@ -82,8 +102,10 @@ export default function RelatosAdmin() {
     const mapaContainerRef = useRef(null);
     const mapaRef = useRef(null);
     const marcadoresRef = useRef([]);
+
     const [mapaPronto, setMapaPronto] = useState(false);
     const [erroMapa, setErroMapa] = useState("");
+    const [estiloMapa, setEstiloMapa] = useState("positron");
 
     const carregarRelatos = useCallback(async () => {
         try {
@@ -152,6 +174,7 @@ export default function RelatosAdmin() {
             setRelatos(dadosLista.relatos || []);
             setRelatosMapa(dadosMapa.relatos || []);
             setCategorias(dadosLista.categorias || []);
+
             setIndicadores(dadosLista.indicadores || {
                 total: 0,
                 pendentes: 0,
@@ -177,6 +200,20 @@ export default function RelatosAdmin() {
         carregarRelatos();
     }, [carregarRelatos]);
 
+    // Troca de estilo do mapa
+    function alterarEstiloMapa(event) {
+        const novoEstilo = event.target.value;
+        const mapa = mapaRef.current;
+
+        if (!estilosMapa[novoEstilo] || !mapa) {
+            return;
+        }
+
+        setEstiloMapa(novoEstilo);
+
+        mapa.setStyle(estilosMapa[novoEstilo].url);
+    }
+
     // Inicialização do mapa
     useEffect(() => {
         if (!mapaContainerRef.current || mapaRef.current) {
@@ -185,7 +222,7 @@ export default function RelatosAdmin() {
 
         const mapa = new maplibregl.Map({
             container: mapaContainerRef.current,
-            style: "https://tiles.openfreemap.org/styles/liberty",
+            style: estilosMapa.positron.url,
             center: [-46.5383, -23.6639],
             zoom: 11,
             attributionControl: true
@@ -203,9 +240,10 @@ export default function RelatosAdmin() {
             setErroMapa("");
         });
 
-      mapa.on("error", (event) => {
-    console.error("Erro detalhado do MapLibre:", event.error || event);
-});
+        mapa.on("error", (event) => {
+            console.error("Erro detalhado do MapLibre:", event.error || event);
+            setErroMapa("Não foi possível carregar o mapa. Verifique sua conexão.");
+        });
 
         return () => {
             marcadoresRef.current.forEach((marcador) => marcador.remove());
@@ -217,11 +255,11 @@ export default function RelatosAdmin() {
         };
     }, []);
 
-    // Atualização dos marcadores quando os filtros mudarem
+    // Atualização dos marcadores quando os filtros ou estilo mudarem
     useEffect(() => {
         const mapa = mapaRef.current;
 
-        if (!mapa || !mapaPronto) {
+        if (!mapa || !mapaPronto || !mapa.isStyleLoaded()) {
             return;
         }
 
@@ -310,7 +348,7 @@ export default function RelatosAdmin() {
                 duration: 700
             });
         }
-    }, [relatosMapa, mapaPronto]);
+    }, [relatosMapa, mapaPronto, estiloMapa]);
 
     function pesquisar(event) {
         event.preventDefault();
@@ -408,6 +446,25 @@ export default function RelatosAdmin() {
                         <i className="legenda-rejeitado" />
                         Rejeitados
                     </span>
+                </div>
+
+                {/* Seletor de estilo */}
+                <div className="relatos-mapa-estilo">
+                    <label htmlFor="relatos-estilo-mapa">
+                        Estilo do mapa
+                    </label>
+
+                    <select
+                        id="relatos-estilo-mapa"
+                        value={estiloMapa}
+                        onChange={alterarEstiloMapa}
+                        disabled={!mapaPronto}
+                    >
+                        <option value="claro">Claro</option>
+                        <option value="escuro">Escuro</option>
+                        <option value="liberty">Liberty</option>
+                        <option value="positron">Positron</option>
+                    </select>
                 </div>
 
                 <div className="relatos-mapa-container">
