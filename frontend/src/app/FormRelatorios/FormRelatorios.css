@@ -1,0 +1,320 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+
+}
+
+.fundoForm {
+    background-image: url('/imagens/relatos.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+
+    width: 100%;
+    min-height: 100vh;
+    padding: 40px 8%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 250px;
+    
+}
+
+.text {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.text-principal {
+    color: blue;
+}
+
+span {
+    display: block;
+}
+
+h1 {
+    font-weight: 800;
+}
+
+.formes {
+    background-color: white;
+    padding: 20px;
+    border-radius: 12px;
+   
+}
+
+.container-icons {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.icons {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.icons i {
+    font-size: 40px;
+    color: blue;
+    background-color: rgba(197, 212, 255, 0.753);
+    border-radius: 20px;
+    padding: 15px 25px 15px;
+}
+
+.aviso-esquerda {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: rgb(2, 2, 2);
+    background-color:rgba(120, 156, 255, 0.753);
+    border-radius: 16px;
+}
+
+.aviso-esquerda p {
+    color: blue;
+}
+
+.aviso-esquerda i {
+    color: rgba(4, 65, 235, 0.753);
+    font-size: 19px;
+    padding: 15px 25px 15px;
+}
+
+/* lado direito do site formes */
+
+
+.fundoForm,
+.fundoForm * {
+    box-sizing: border-box;
+}
+
+
+
+.fundoForm .text {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    width: 420px;
+    flex-shrink: 0;
+}
+
+.fundoForm .text-principal {
+    color: blue;
+}
+
+.fundoForm .text-principal h1 {
+    font-weight: 800;
+}
+
+.fundoForm .text-principal span {
+    display: block;
+}
+
+.fundoForm .container-icons {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.fundoForm .icons {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.fundoForm .icons i {
+    font-size: 40px;
+    color: blue;
+    background-color: rgba(197, 212, 255, 0.753);
+    border-radius: 20px;
+    padding: 15px 25px;
+}
+
+.fundoForm .aviso-esquerda {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: #020202;
+    background-color: rgba(120, 156, 255, 0.753);
+    border-radius: 16px;
+    padding: 10px;
+}
+
+.fundoForm .aviso-esquerda i {
+    font-size: 18px;
+    padding: 15px;
+}
+
+.fundoForm .formes {
+    width: 100%;
+    max-width: 650px;
+    min-width: 0;
+    padding: 35px;
+    background-color: #fff;
+    border: 1px solid #e5edf8;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(20, 65, 130, 0.08);
+}
+
+.fundoForm .text-form {
+    margin-bottom: 25px;
+}
+
+.fundoForm .text-form h1 {
+    color: #102b50;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.fundoForm .text-form p {
+    color: #7186a8;
+    font-size: 15px;
+}
+
+.fundoForm .formes > strong {
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: #e6edf7;
+    margin-bottom: 25px;
+}
+
+.fundoForm .formes form {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    width: 100%;
+}
+
+.fundoForm .camp1,
+.fundoForm .sub-campo2 {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-width: 0;
+}
+
+.fundoForm .camp1 label,
+.fundoForm .sub-campo2 label {
+    color: #102b50;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.fundoForm .camp1 select,
+.fundoForm .sub-campo2 input {
+    width: 100%;
+    max-width: 100%;
+    height: 48px;
+    padding: 0 15px;
+    border: 1px solid #d5e1f1;
+    border-radius: 10px;
+    background-color: #fff;
+    color: #7186a8;
+    font-size: 14px;
+    outline: none;
+}
+
+.fundoForm .camp1 select:focus,
+.fundoForm .sub-campo2 input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.fundoForm .campo2 {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+}
+
+.fundoForm .sub-campo2 input::placeholder {
+    color: #8a9dbb;
+}
+
+.fundoForm .sub2-campo2 {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.fundoForm .sub2-campo2 button {
+    padding: 13px 25px;
+    border: 1px solid #2563eb;
+    border-radius: 9px;
+    background-color: #fff;
+    color: #2563eb;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.fundoForm .sub2-campo2 button:hover {
+    background-color: #2563eb;
+    color: #fff;
+}
+
+.fundoForm .sub3-campo2 {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.fundoForm .sub3-campo2 input {
+    width: 17px;
+    height: 17px;
+    margin-top: 3px;
+    accent-color: #2563eb;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.fundoForm .sub3-campo2 label {
+    color: #7186a8;
+    font-size: 13px;
+    line-height: 1.6;
+    cursor: pointer;
+}
+
+.fundoForm .sub3-campo2 span {
+    color: #2563eb;
+}
+
+.fundoForm .sub4-campo2 {
+    width: 100%;
+    background-color: #2563eb;
+    padding: 15px;
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 18px;
+    display: flex;
+    justify-content: center;
+    border-radius: 8px;
+    gap: 10px;
+}
+
+.fundoForm .sub4-campo2 button {
+    width: 100%;
+    min-height: 50px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(90deg, #2860ed, #1554dc);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.fundoForm .sub4-campo2 button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(37, 99, 235, 0.25);
+}
