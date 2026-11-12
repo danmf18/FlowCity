@@ -7,8 +7,6 @@ import { useRouter } from "next/navigation";
 import "@/app/login/login.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
 export default function Login() {
     const router = useRouter();
 
@@ -17,6 +15,16 @@ export default function Login() {
     const [mensagem, setMensagem] = useState("");
     const [carregando, setCarregando] = useState(false);
 
+    function obterDashboard(perfil) {
+        const dashboards = {
+            admin_geral: "/admin",
+            admin_municipal: "/admin-municipio",
+            cidadao: "/usuarios"
+        };
+
+        return dashboards[perfil] || "/";
+    }
+
     async function realizarLogin(e) {
         e.preventDefault();
 
@@ -24,23 +32,43 @@ export default function Login() {
         setCarregando(true);
 
         try {
-            if (!API_URL) {
-                throw new Error("Endereço da API não configurado.");
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+            if (!apiUrl) {
+                throw new Error("URL da API não configurada.");
             }
 
-            const resposta = await fetch(
-                `${API_URL}/auth/login`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        email: email.trim(),
-                        senha
-                    })
-                }
-            );
+            const baseURL = apiUrl.replace(/\/+$/, "");
+
+            const enderecoAPI = baseURL.endsWith("/api")
+                ? `${baseURL}/auth/login`
+                : `${baseURL}/api/auth/login`;
+
+            console.log("Enviando login para:", enderecoAPI);
+
+            const resposta = await fetch(enderecoAPI, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    email: email.trim(),
+                    senha
+                })
+            });
+
+            const tipoConteudo =
+                resposta.headers.get("content-type");
+
+            if (!tipoConteudo?.includes("application/json")) {
+                const texto = await resposta.text();
+
+                console.error("Resposta da API:", texto);
+
+                throw new Error(
+                    `A API não retornou JSON. Status: ${resposta.status}`
+                );
+            }
 
             const dados = await resposta.json();
 
@@ -51,6 +79,11 @@ export default function Login() {
                 return;
             }
 
+            if (!dados.token || !dados.usuario) {
+                setMensagem("Resposta inválida do servidor.");
+                return;
+            }
+
             localStorage.setItem("token", dados.token);
 
             localStorage.setItem(
@@ -58,27 +91,18 @@ export default function Login() {
                 JSON.stringify(dados.usuario)
             );
 
-            // Redirecionamento conforme o perfil
-            switch (dados.usuario.perfil) {
-                case "admin_municipal":
-                    router.push("/admin-municipio");
-                    break;
-
-                case "admin_geral":
-                    router.push("/admin-geral");
-                    break;
-
-                default:
-                    router.push("/");
-                    break;
-            }
+            router.replace(
+                obterDashboard(dados.usuario.perfil)
+            );
 
         } catch (erro) {
-            console.error("Erro no login:", erro);
+            console.error("Erro ao realizar login:", erro);
 
             setMensagem(
-                erro.message || "Não foi possível conectar ao servidor."
+                erro.message ||
+                "Não foi possível conectar ao servidor."
             );
+
         } finally {
             setCarregando(false);
         }
@@ -122,19 +146,34 @@ export default function Login() {
                     <div className="icon">
                         <i className="bi bi-geo-alt"></i>
                         <h3>Mapa interativo</h3>
-                        <p>Visualize relatos por localização.</p>
+                        <p>
+                            Visualize relatos por
+                            <span className="quebra-linha">
+                                localização.
+                            </span>
+                        </p>
                     </div>
 
                     <div className="icon">
                         <i className="bi bi-file-earmark-plus"></i>
                         <h3>Registro de relatos</h3>
-                        <p>Compartilhe informações com a comunidade.</p>
+                        <p>
+                            Compartilhe informações
+                            <span className="quebra-linha">
+                                com a comunidade.
+                            </span>
+                        </p>
                     </div>
 
                     <div className="icon">
                         <i className="bi bi-shield-check"></i>
-                        <h3>Mais transparência</h3>
-                        <p>Acompanhe informações com responsabilidade.</p>
+                        <h3>Transparência</h3>
+                        <p>
+                            Consulte informações
+                            <span className="quebra-linha">
+                                de forma acessível.
+                            </span>
+                        </p>
                     </div>
 
                 </div>
@@ -162,7 +201,9 @@ export default function Login() {
                                     type="email"
                                     placeholder="seu@email.com"
                                     value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    onChange={(e) =>
+                                        setEmail(e.target.value)
+                                    }
                                     required
                                 />
                             </div>
@@ -175,7 +216,9 @@ export default function Login() {
                                     type="password"
                                     placeholder="Digite sua senha"
                                     value={senha}
-                                    onChange={(e) => setSenha(e.target.value)}
+                                    onChange={(e) =>
+                                        setSenha(e.target.value)
+                                    }
                                     required
                                 />
 
@@ -191,7 +234,10 @@ export default function Login() {
                                         type="submit"
                                         disabled={carregando}
                                     >
-                                        {carregando ? "Entrando..." : "Entrar"}
+                                        {carregando
+                                            ? "Entrando..."
+                                            : "Entrar"}
+
                                         <i className="bi bi-arrow-right"></i>
                                     </button>
                                 </div>
@@ -217,8 +263,11 @@ export default function Login() {
                             <p>
                                 <i className="bi bi-shield-check"></i>
                                 Seus dados estão protegidos e são usados
-                                apenas para melhorar sua experiência na
-                                plataforma.
+                                apenas
+                                <span className="quebra-linha">
+                                    para melhorar sua experiência na
+                                    plataforma.
+                                </span>
                             </p>
                         </div>
 

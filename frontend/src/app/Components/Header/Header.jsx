@@ -53,7 +53,6 @@ export default function Header() {
         }
 
         setMenuAberto(false);
-
         router.push(obterDashboard(usuario.perfil));
     }
 
@@ -76,7 +75,6 @@ export default function Header() {
 
     return (
         <header className="header">
-
             <div className="header-container">
 
                 <Link href="/" className="header-logo">
@@ -93,6 +91,7 @@ export default function Header() {
                     className="header-menu-button"
                     onClick={() => setMenuAberto(!menuAberto)}
                     aria-label="Abrir menu"
+                    aria-expanded={menuAberto}
                 >
                     <i
                         className={`bi ${
@@ -106,7 +105,6 @@ export default function Header() {
                         menuAberto ? "active" : ""
                     }`}
                 >
-
                     <Link
                         href="/"
                         onClick={() => setMenuAberto(false)}
@@ -129,7 +127,6 @@ export default function Header() {
                     </Link>
 
                     {usuario ? (
-
                         <div className="header-user">
 
                             <button
@@ -143,6 +140,7 @@ export default function Header() {
                             </button>
 
                             <button
+                                type="button"
                                 className="header-logout"
                                 onClick={sair}
                             >
@@ -151,9 +149,7 @@ export default function Header() {
                             </button>
 
                         </div>
-
                     ) : (
-
                         <div className="header-actions">
 
                             <Link
@@ -173,13 +169,10 @@ export default function Header() {
                             </Link>
 
                         </div>
-
                     )}
-
                 </nav>
 
             </div>
-
         </header>
     );
 }
