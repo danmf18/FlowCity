@@ -31,6 +31,7 @@ app.get("/", (request, response) => {
 
 app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/relatos", relatosRoutes);
 
 app.use(errorHandler);
 
