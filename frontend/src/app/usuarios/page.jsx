@@ -1,151 +1,161 @@
+
 import Link from "next/link";
-
-const estatisticas = [
-    {
-        titulo: "Relatos enviados",
-        valor: "08",
-        descricao: "Total de relatos registrados",
-        icone: "bi-file-earmark-text",
-    },
-    {
-        titulo: "Em análise",
-        valor: "03",
-        descricao: "Aguardando avaliação",
-        icone: "bi-search",
-    },
-    {
-        titulo: "Concluídos",
-        valor: "05",
-        descricao: "Análise finalizada",
-        icone: "bi-check-circle",
-    },
-];
-
-const relatosRecentes = [
-    {
-        codigo: "#ABC-008",
-        categoria: "Furto",
-        local: "Centro",
-        data: "05/11/2026",
-        status: "Em análise",
-        classe: "status-analise",
-    },
-    {
-        codigo: "#ABC-007",
-        categoria: "Vandalismo",
-        local: "Jardim América",
-        data: "03/11/2026",
-        status: "Pendente",
-        classe: "status-pendente",
-    },
-    {
-        codigo: "#ABC-006",
-        categoria: "Roubo",
-        local: "Vila Nova",
-        data: "01/11/2026",
-        status: "Concluído",
-        classe: "status-concluido",
-    },
-];
 
 export default function UsuariosPage() {
     return (
-        <div className="user-page">
-            <div className="user-page-heading">
-                <div>
-                    <span>PAINEL DO CIDADÃO</span>
-                    <h1>Visão geral</h1>
+        <div className="usuarios-home">
+
+            {/* APRESENTAÇÃO */}
+
+            <section className="usuarios-welcome">
+
+                <div className="usuarios-welcome-content">
+
+                    <span className="usuarios-eyebrow">
+                        BEM-VINDO AO ALERTABC
+                    </span>
+
+                    <h2>
+                        Sua participação faz a diferença.
+                    </h2>
+
                     <p>
-                        Acompanhe os relatos de possíveis ocorrências
-                        registrados por você.
+                        Registre possíveis ocorrências, acompanhe
+                        seus relatos e contribua para uma comunidade
+                        mais informada.
                     </p>
-                </div>
 
-                <Link
-                    href="/usuarios/novo-relato"
-                    className="user-btn-primary"
-                >
-                    <i className="bi bi-plus-lg"></i>
-                    Novo relato
-                </Link>
-            </div>
-
-            <div className="user-stats-grid">
-                {estatisticas.map((item) => (
-                    <div className="user-stat-card" key={item.titulo}>
-                        <div>
-                            <span>{item.titulo}</span>
-                            <h2>{item.valor}</h2>
-                            <p>{item.descricao}</p>
-                        </div>
-
-                        <div className="user-stat-icon">
-                            <i className={`bi ${item.icone}`}></i>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            <section className="user-panel">
-                <div className="user-panel-header">
-                    <div>
-                        <h2>Relatos recentes</h2>
-                        <p>
-                            Acompanhe as atualizações dos seus últimos
-                            registros.
-                        </p>
-                    </div>
-
-                    <Link href="/usuarios/relatos">
-                        Ver todos
-                        <i className="bi bi-arrow-right"></i>
+                    <Link
+                        href="/usuarios/novo-relato"
+                        className="usuarios-primary-button"
+                    >
+                        <i className="bi bi-plus-lg"></i>
+                        Registrar novo relato
                     </Link>
+
                 </div>
 
-                <div className="table-responsive">
-                    <table className="user-table">
-                        <thead>
-                            <tr>
-                                <th>Código</th>
-                                <th>Categoria</th>
-                                <th>Localidade</th>
-                                <th>Data</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {relatosRecentes.map((relato) => (
-                                <tr key={relato.codigo}>
-                                    <td>{relato.codigo}</td>
-                                    <td>{relato.categoria}</td>
-                                    <td>{relato.local}</td>
-                                    <td>{relato.data}</td>
-                                    <td>
-                                        <span
-                                            className={`user-status ${relato.classe}`}
-                                        >
-                                            {relato.status}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="usuarios-welcome-icon">
+                    <i className="bi bi-shield-check"></i>
                 </div>
+
             </section>
 
-            <div className="user-alert">
-                <i className="bi bi-info-circle"></i>
+            {/* ACESSO RÁPIDO */}
+
+            <section className="usuarios-section">
+
+                <div className="usuarios-section-heading">
+
+                    <div>
+                        <span>ACESSO RÁPIDO</span>
+                        <h3>O que deseja fazer?</h3>
+                    </div>
+
+                </div>
+
+                <div className="usuarios-shortcuts">
+
+                    {/* MEUS RELATOS */}
+
+                    <Link
+                        href="/usuarios/relatos"
+                        className="usuarios-shortcut-card"
+                    >
+
+                        <div className="usuarios-shortcut-icon blue">
+                            <i className="bi bi-file-earmark-text"></i>
+                        </div>
+
+                        <h4>Meus relatos</h4>
+
+                        <p>
+                            Consulte os relatos que você enviou
+                            e acompanhe suas atualizações.
+                        </p>
+
+                        <span>
+                            Acessar relatos
+                            <i className="bi bi-arrow-right"></i>
+                        </span>
+
+                    </Link>
+
+                    {/* NOVO RELATO */}
+
+                    <Link
+                        href="/usuarios/novo-relato"
+                        className="usuarios-shortcut-card"
+                    >
+
+                        <div className="usuarios-shortcut-icon green">
+                            <i className="bi bi-plus-circle"></i>
+                        </div>
+
+                        <h4>Novo relato</h4>
+
+                        <p>
+                            Compartilhe informações sobre uma
+                            possível ocorrência.
+                        </p>
+
+                        <span>
+                            Fazer um relato
+                            <i className="bi bi-arrow-right"></i>
+                        </span>
+
+                    </Link>
+
+                    {/* PERFIL */}
+
+                    <Link
+                        href="/usuarios/perfil"
+                        className="usuarios-shortcut-card"
+                    >
+
+                        <div className="usuarios-shortcut-icon gray">
+                            <i className="bi bi-person"></i>
+                        </div>
+
+                        <h4>Meu perfil</h4>
+
+                        <p>
+                            Consulte e atualize seus dados
+                            cadastrais.
+                        </p>
+
+                        <span>
+                            Ver meu perfil
+                            <i className="bi bi-arrow-right"></i>
+                        </span>
+
+                    </Link>
+
+                </div>
+
+            </section>
+
+            {/* INFORMAÇÕES */}
+
+            <section className="usuarios-information">
+
+                <div className="usuarios-information-icon">
+                    <i className="bi bi-info-circle"></i>
+                </div>
+
                 <div>
-                    <strong>Sobre os relatos do AlertABC</strong>
+                    <h4>Sobre seus relatos</h4>
+
                     <p>
-                        Os registros são informações enviadas por usuários
-                        e não representam crimes confirmados nem substituem
-                        boletins de ocorrência ou canais oficiais.
+                        Os relatos enviados passam por análise.
+                        Você poderá acompanhar o andamento e a
+                        situação de cada registro na seção
+                        "Meus relatos".
                     </p>
                 </div>
-            </div>
+
+            </section>
+
         </div>
     );
 }

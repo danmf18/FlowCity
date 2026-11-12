@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+
 export default function PerfilUsuario() {
     const [usuario, setUsuario] = useState({
         nome: "",

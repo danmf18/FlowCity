@@ -1,89 +1,185 @@
+"use client";
 
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import "./usuarios.css";
+import "./usuarios.css"
 
 const menu = [
-    { titulo: "Visão geral", href: "/usuarios", icone: "bi-grid" },
-    { titulo: "Meus relatos", href: "/usuarios/relatos", icone: "bi-file-earmark-text" },
-    { titulo: "Novo relato", href: "/usuarios/novo-relato", icone: "bi-plus-circle" },
-    { titulo: "Meu perfil", href: "/usuarios/perfil", icone: "bi-person" },
+    {
+        nome: "Inicio",
+        caminho: "/usuarios",
+        icone: "bi-house"
+    },
+    {
+        nome: "Meus relatos",
+        caminho: "/usuarios/relatos",
+        icone: "bi-file-earmark-text"
+    },
+    {
+        nome: "Novo relato",
+        caminho: "/usuarios/novo-relato",
+        icone: "bi-plus-circle"
+    },    {
+        nome: "Meu perfil",
+        caminho: "/usuarios/perfil",
+        icone: "bi-person"
+    }
+        
 ];
 
-export default function UsuariosLayout({ children }) {
-    return (
-        <div className="user-dashboard">
-            <aside className="user-sidebar">
-                <Link href="/usuarios" className="user-brand">
-                    <div className="user-brand-icon">
-                        <i className="bi bi-shield-check"></i>
-                    </div>
-                    <div>
-                        <strong>AlertABC</strong>
-                        <span>Área do cidadão</span>
-                    </div>
+export default function UsuariosLayout({ children}){
+    
+    const pathname = usePathname();
+    const router = useRouter();
+
+    const [usuario, setUsuario] = useState(null);
+    const [carregando, setCarregando] = useState(true);
+
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        const usuarioSalvo = localStorage.getItem("usuario");
+
+        if (!token){
+            router.replace("/login");
+            return;
+        }
+
+        try{
+            if (usuarioSalvo) {
+                setUsuario(JSON.parse(usuarioSalvo));
+            }
+        } catch(erro){
+            console.error("Erro ao carregar usuário:", erro);
+        }
+
+        setCarregando(false);
+    }, [router]);
+
+    function sair(){
+        localStorage.removeItem("token");
+        localStorage.removeItem("usuario");
+
+        router.push("/login");
+    }
+
+    if (carregando){
+        return (
+            <div className="usuarios-loading">
+                <div className="spinner-border text-primary"></div>
+                <span>Carregando sua área...</span>
+            </div>
+        );
+    }
+
+
+
+
+    return(
+        <div className="usuarios-container">
+
+
+            <aside className="usuarios-sidebar">
+
+                <Link href="/usuarios" className="usuarios-brand">
+                    <span className="usuarios-brand-icon">
+                        <i  className="bi bi-shield-check"></i>
+                    </span>
+                
+                <span>
+                    Alert<span>ABC</span>
+                </span>
                 </Link>
 
-                <div className="user-sidebar-label">MENU PRINCIPAL</div>
-
-                <nav className="user-navigation">
-                    {menu.map((item) => (
-                        <Link
-                            href={item.href}
-                            key={item.href}
-                            className="user-nav-link"
-                        >
-                            <i className={`bi ${item.icone}`}></i>
-                            <span>{item.titulo}</span>
-                        </Link>
-                    ))}
-                </nav>
-
-                <div className="user-sidebar-bottom">
-                    <div className="user-help-card">
-                        <i className="bi bi-info-circle"></i>
-                        <strong>Precisa de ajuda?</strong>
-                        <p>
-                            Utilize os canais de atendimento da plataforma
-                            para esclarecer suas dúvidas.
-                        </p>
+                <div className="usuarios-user">
+                    <div className="usuarios-avatar">
+                        <i className="bi bi-person"></i>
                     </div>
 
-                    <Link href="/" className="user-back-link">
-                        <i className="bi bi-box-arrow-left"></i>
-                        Voltar ao início
-                    </Link>
+                    <div className="usuarios-user-info" >
+                        <strong>
+                            {usuario?.nome || "Cidadão"}
+                        </strong>
+
+                        <span>Conta de cidadão</span>
+                    </div>
                 </div>
+
+                <nav  className="usuarios-navigation">
+
+                    <span className="usuarios-menu-title" >
+                        MENU PRINCIPAL
+                    </span>
+
+                    {menu.map((item) => {
+                        const ativo = pathname === item.caminho;
+
+                        return(
+                            <Link
+                                key={item.caminho}
+                                href={item.caminho}
+                                className={`usuarios-menu-item ${
+                                    ativo ? "active" : ""
+                                }`}
+                                >
+                                    <i  className={`bi ${item.icone}`}></i>
+                                    <span>{item.nome}</span>
+                            </Link>
+                        );
+                    })}
+                </nav>
+                
+
+
+                <div className="usuarios-sidebar-bottom"  >
+                    <button
+                        type="button"
+                        className="usuarios-logout"
+                        onClick={sair}
+                    >
+                        <i  className="bi bi-box-arrow-left"></i>
+                        <span>Sair da conta</span>
+                    </button>
+                </div>
+
             </aside>
 
-            <main className="user-main">
-                <header className="user-topbar">
+
+
+
+            <div className="usuarios-main">
+
+                <header className="usuarios-topbar" >
                     <div>
-                        <span className="user-topbar-label">
-                            PORTAL DO CIDADÃO
+                        <span className="usuarios-topbar-label">
+                            ÁREA DO CIDADÃO
                         </span>
-                        <h2>Área do usuário</h2>
+                        <h1>Meu espaço</h1>
                     </div>
 
-                    <Link
-                        href="/usuarios/perfil"
-                        className="user-topbar-profile"
-                        aria-label="Meu perfil"
-                    >
-                        <div className="user-avatar">
+                    <div className="usuarios-topbar-user">
+                        <div className="usuarios-avatar small">
                             <i className="bi bi-person"></i>
                         </div>
-                        <div className="user-topbar-user">
-                            <strong>Minha conta</strong>
-                            <span>Usuário</span>
-                        </div>
-                        <i className="bi bi-chevron-down"></i>
-                    </Link>
+
+                        <span>
+                            {usuario?.nome || "Cidadão"}
+                        </span>
+
+                    </div>
+
                 </header>
 
-                <div className="user-content">
-                    {children}
-                </div>
-            </main>
+                    <main className="usuarios-content">
+                        {children}
+                    </main>
+
+                
+            </div>
+
+
+
+
         </div>
     );
 }
