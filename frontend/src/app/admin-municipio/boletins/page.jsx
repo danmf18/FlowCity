@@ -1,47 +1,69 @@
+
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-const boletins = [
-    { numero: "2026-000128", categoria: "Furto", data: "07/11/2026", origem: "Registro oficial" },
-    { numero: "2026-000117", categoria: "Roubo", data: "05/11/2026", origem: "Registro oficial" },
-    { numero: "2026-000103", categoria: "Vandalismo", data: "02/11/2026", origem: "Registro oficial" },
-];
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
-export default function BoletinsMunicipioPage() {
-    const [busca, setBusca] = useState("");
+export default function BoletinsMunicipaisPage() {
+    const [boletins, setBoletins] = useState([]);
+    const [carregando, setCarregando] = useState(true);
+    const [erro, setErro] = useState("");
 
-    const resultado = boletins.filter((item) =>
-        `${item.numero} ${item.categoria}`
-            .toLowerCase()
-            .includes(busca.toLowerCase())
-    );
+    useEffect(() => {
+        async function carregarBoletins() {
+            try {
+                const token = localStorage.getItem("token");
+
+                if (!token) {
+                    throw new Error("Sessão não encontrada. Entre novamente.");
+                }
+
+                const resposta = await fetch(
+                    `${API}/admin-municipal/boletins`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    }
+                );
+
+                if (resposta.status === 404) {
+                    setErro("A consulta de boletins ainda não está disponível no backend.");
+                    return;
+                }
+
+                const dados = await resposta.json();
+
+                if (!resposta.ok) {
+                    throw new Error(dados.mensagem || "Não foi possível carregar os dados.");
+                }
+
+                setBoletins(
+                    Array.isArray(dados)
+                        ? dados
+                        : dados.boletins || dados.dados || []
+                );
+            } catch (error) {
+                setErro(error.message);
+            } finally {
+                setCarregando(false);
+            }
+        }
+
+        carregarBoletins();
+    }, []);
 
     return (
         <div className="municipal-page">
             <div className="municipal-heading">
                 <div>
-                    <span>CONSULTA DE DADOS OFICIAIS</span>
-                    <h1>Boletins de ocorrência</h1>
+                    <span className="admin-municipio-etiqueta">
+                        CONSULTA
+                    </span>
+                    <h1>Boletins</h1>
                     <p>
-                        Consulte os registros oficiais disponíveis para
-                        o município.
-                    </p>
-                </div>
-                <span className="municipal-readonly">
-                    <i className="bi bi-lock"></i>
-                    Somente leitura
-                </span>
-            </div>
-
-            <div className="municipal-notice">
-                <i className="bi bi-shield-lock"></i>
-                <div>
-                    <strong>Área de consulta protegida</strong>
-                    <p>
-                        Os boletins são provenientes da tabela de registros
-                        oficiais. Seu conteúdo não pode ser alterado pelo
-                        administrador municipal ou geral.
+                        Área de consulta de informações disponibilizadas ao município.
                     </p>
                 </div>
             </div>
@@ -49,52 +71,59 @@ export default function BoletinsMunicipioPage() {
             <section className="municipal-panel">
                 <div className="municipal-panel-heading">
                     <div>
-                        <h2>Registros oficiais</h2>
-                        <p>Lista demonstrativa. A conexão com o banco será feita posteriormente.</p>
+                        <h2>Boletins disponíveis</h2>
+                        <p>Consulta de registros vinculados ao município.</p>
                     </div>
                 </div>
 
-                <div className="municipal-filters">
-                    <input
-                        value={busca}
-                        onChange={(e) => setBusca(e.target.value)}
-                        placeholder="Pesquisar número ou categoria..."
-                    />
+                <div className="municipal-notice">
+                    <i className="bi bi-info-circle" />
+                    O AlertABC está focado nos relatos não oficiais enviados por usuários.
+                    Esta área não representa consulta ou emissão de boletins de ocorrência oficiais.
                 </div>
 
-                <div className="table-responsive">
-                    <table className="municipal-table">
-                        <thead>
-                            <tr>
-                                <th>Número do BO</th>
-                                <th>Categoria</th>
-                                <th>Data do registro</th>
-                                <th>Origem</th>
-                                <th>Acesso</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {resultado.length ? resultado.map((item) => (
-                                <tr key={item.numero}>
-                                    <td>{item.numero}</td>
-                                    <td>{item.categoria}</td>
-                                    <td>{item.data}</td>
-                                    <td>{item.origem}</td>
-                                    <td>
-                                        <span className="municipal-readonly small">
-                                            <i className="bi bi-eye"></i>
-                                            Consulta
-                                        </span>
-                                    </td>
-                                </tr>
-                            )) : (
+                {carregando ? (
+                    <div className="municipal-empty">
+                        Consultando informações...
+                    </div>
+                ) : erro ? (
+                    <div className="municipal-empty">
+                        <i className="bi bi-database-exclamation" />
+                        <p>{erro}</p>
+                    </div>
+                ) : boletins.length === 0 ? (
+                    <div className="municipal-empty">
+                        <i className="bi bi-inbox" />
+                        <p>Nenhum registro disponível para consulta.</p>
+                    </div>
+                ) : (
+                    <div className="table-responsive">
+                        <table className="municipal-table">
+                            <thead>
                                 <tr>
-                                    <td colSpan="5">Nenhum boletim encontrado.</td>
+                                    <th>Identificação</th>
+                                    <th>Descrição</th>
+                                    <th>Data</th>
+                                    <th>Situação</th>
                                 </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                {boletins.map((item) => (
+                                    <tr key={item.id || item.id_boletim}>
+                                        <td>{item.identificacao || item.id || "—"}</td>
+                                        <td>{item.descricao || "—"}</td>
+                                        <td>
+                                            {item.data
+                                                ? new Date(item.data).toLocaleDateString("pt-BR")
+                                                : "—"}
+                                        </td>
+                                        <td>{item.situacao || "—"}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </section>
         </div>
     );

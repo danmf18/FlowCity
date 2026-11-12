@@ -4,7 +4,7 @@ import express from "express";
 import helmet from "helmet";
 
 import { errorHandler } from "./middlewares/errorHandler.js";
-
+import adminMunicipalRoutes from "./routes/adminMunicipalRoutes.js";
 import healthRoutes from "./routes/healthRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 
@@ -31,7 +31,7 @@ app.get("/", (request, response) => {
 
 app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
-
+app.use("/api/admin-municipal", adminMunicipalRoutes);
 app.use(errorHandler);
 
 export default app;
