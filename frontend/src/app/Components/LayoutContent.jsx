@@ -9,17 +9,18 @@ import Footer from "./Footer/Footer";
 export default function LayoutContent({ children }) {
     const pathname = usePathname();
 
-    const paginaAdministrativa =
+    const paginaSemLayoutPublico =
         pathname.startsWith("/admin-municipio") ||
-        pathname.startsWith("/admin-geral");
+        pathname.startsWith("/admin-geral") ||
+        pathname.startsWith("/usuarios");
 
     return (
         <>
-            {!paginaAdministrativa && <Header />}
+            {!paginaSemLayoutPublico && <Header />}
 
             {children}
 
-            {!paginaAdministrativa && <Footer />}
+            {!paginaSemLayoutPublico && <Footer />}
         </>
     );
 }

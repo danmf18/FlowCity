@@ -4,10 +4,12 @@ import express from "express";
 import helmet from "helmet";
 
 import { errorHandler } from "./middlewares/errorHandler.js";
+
 import adminMunicipalRoutes from "./routes/adminMunicipalRoutes.js";
+import adminGeralRoutes from "./routes/adminGeralRoutes.js";
 import healthRoutes from "./routes/healthRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
-import adminGeralRoutes from "./routes/adminGeralRoutes.js";
+import usuarioRoutes from "./routes/usuarioRoutes.js";
 
 const app = express();
 
@@ -33,8 +35,9 @@ app.get("/", (request, response) => {
 app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/admin-geral", adminGeralRoutes);
-
 app.use("/api/admin-municipal", adminMunicipalRoutes);
+app.use("/api/usuario", usuarioRoutes);
+
 app.use(errorHandler);
 
 export default app;

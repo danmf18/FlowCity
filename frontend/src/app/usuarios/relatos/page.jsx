@@ -1,53 +1,91 @@
+
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";[]
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
-
-const relatosIniciais = [
-    {
-        codigo: "#ABC-008",
-        categoria: "Furto",
-        local: "Centro",
-        data: "05/11/2026",
-        status: "Em análise",
-        classe: "status-analise",
-    },
-    {
-        codigo: "#ABC-007",
-        categoria: "Vandalismo",
-        local: "Jardim América",
-        data: "03/11/2026",
-        status: "Pendente",
-        classe: "status-pendente",
-    },
-    {
-        codigo: "#ABC-006",
-        categoria: "Roubo",
-        local: "Vila Nova",
-        data: "01/11/2026",
-        status: "Concluído",
-        classe: "status-concluido",
-    },
-    {
-        codigo: "#ABC-005",
-        categoria: "Ameaça",
-        local: "Centro",
-        data: "28/10/2026",
-        status: "Em análise",
-        classe: "status-analise",
-    },
-];
+const API =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 export default function MeusRelatosPage() {
+    const [relatos, setRelatos] = useState([]);
     const [filtro, setFiltro] = useState("Todos");
+    const [carregando, setCarregando] = useState(true);
+    const [mensagem, setMensagem] = useState("");
+
+    useEffect(() => {
+        async function carregarRelatos() {
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                window.location.href = "/login";
+                return;
+            }
+
+            try {
+                const resposta = await fetch(`${API}/usuario/relatos`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                const dados = await resposta.json();
+
+                if (resposta.status === 401 || resposta.status === 403) {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("usuario");
+                    window.location.href = "/login";
+                    return;
+                }
+
+                if (!resposta.ok) {
+                    throw new Error(
+                        dados.mensagem || "Não foi possível carregar os relatos."
+                    );
+                }
+
+                setRelatos(dados.relatos || []);
+            } catch (erro) {
+                setMensagem(
+                    erro.message || "Erro ao consultar os relatos."
+                );
+            } finally {
+                setCarregando(false);
+            }
+        }
+
+        carregarRelatos();
+    }, []);
+
+    function formatarData(data) {
+        if (!data) return "—";
+
+        const dataConvertida = new Date(
+            String(data).replace(" ", "T")
+        );
+
+        if (Number.isNaN(dataConvertida.getTime())) {
+            return "—";
+        }
+
+        return dataConvertida.toLocaleDateString("pt-BR");
+    }
+
+    function classeStatus(status) {
+        switch (status) {
+            case "Aprovado":
+                return "status-aprovado";
+            case "Rejeitado":
+                return "status-rejeitado";
+            default:
+                return "status-pendente";
+        }
+    }
 
     const relatosFiltrados =
         filtro === "Todos"
-            ? relatosIniciais
-            : relatosIniciais.filter(
-                  (relato) => relato.status === filtro
-              );
+            ? relatos
+            : relatos.filter((relato) => relato.situacao === filtro);
 
     return (
         <div className="user-page">
@@ -87,51 +125,67 @@ export default function MeusRelatosPage() {
                     >
                         <option value="Todos">Todos os status</option>
                         <option value="Pendente">Pendentes</option>
-                        <option value="Em análise">Em análise</option>
-                        <option value="Concluído">Concluídos</option>
+                        <option value="Aprovado">Aprovados</option>
+                        <option value="Rejeitado">Rejeitados</option>
                     </select>
                 </div>
 
-                <div className="table-responsive">
-                    <table className="user-table">
-                        <thead>
-                            <tr>
-                                <th>Código</th>
-                                <th>Categoria</th>
-                                <th>Localidade</th>
-                                <th>Data do envio</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
+                {carregando ? (
+                    <div className="user-empty-state">
+                        Carregando seus relatos...
+                    </div>
+                ) : mensagem ? (
+                    <div className="user-alert user-alert-error" role="alert">
+                        <i className="bi bi-exclamation-circle"></i>
+                        <p>{mensagem}</p>
+                    </div>
+                ) : (
+                    <div className="table-responsive">
+                        <table className="user-table">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Categoria</th>
+                                    <th>Localidade</th>
+                                    <th>Data do envio</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
 
-                        <tbody>
-                            {relatosFiltrados.length > 0 ? (
-                                relatosFiltrados.map((relato) => (
-                                    <tr key={relato.codigo}>
-                                        <td>{relato.codigo}</td>
-                                        <td>{relato.categoria}</td>
-                                        <td>{relato.local}</td>
-                                        <td>{relato.data}</td>
-                                        <td>
-                                            <span
-                                                className={`user-status ${relato.classe}`}
-                                            >
-                                                {relato.status}
-                                            </span>
+                            <tbody>
+                                {relatosFiltrados.length > 0 ? (
+                                    relatosFiltrados.map((relato) => (
+                                        <tr key={relato.id_relato}>
+                                            <td>
+                                                #{String(relato.id_relato).padStart(3, "0")}
+                                            </td>
+                                            <td>{relato.categoria}</td>
+                                            <td>
+                                                {relato.referencia_local || "Não informado"}
+                                            </td>
+                                            <td>{formatarData(relato.enviado_em)}</td>
+                                            <td>
+                                                <span
+                                                    className={`user-status ${classeStatus(relato.situacao)}`}
+                                                >
+                                                    {relato.situacao}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="5">
+                                            {relatos.length === 0
+                                                ? "Você ainda não possui relatos cadastrados."
+                                                : "Nenhum relato encontrado para esse filtro."}
                                         </td>
                                     </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="5">
-                                        Nenhum relato encontrado para
-                                        esse filtro.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </section>
 
             <div className="user-alert">

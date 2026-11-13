@@ -1,7 +1,25 @@
 
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function UsuariosPage() {
+    const [nome, setNome] = useState("Cidadão");
+
+    useEffect(() => {
+        try {
+            const usuarioSalvo = localStorage.getItem("usuario");
+
+            if (usuarioSalvo) {
+                const usuario = JSON.parse(usuarioSalvo);
+                setNome(usuario.nome || "Cidadão");
+            }
+        } catch (erro) {
+            console.error("Erro ao carregar nome do usuário:", erro);
+        }
+    }, []);
+
     return (
         <div className="usuarios-home">
 
@@ -16,10 +34,11 @@ export default function UsuariosPage() {
                     </span>
 
                     <h2>
-                        Sua participação faz a diferença.
+                        Olá, {nome.split(" ")[0]}!
                     </h2>
 
                     <p>
+                        Sua participação faz a diferença.
                         Registre possíveis ocorrências, acompanhe
                         seus relatos e contribua para uma comunidade
                         mais informada.
