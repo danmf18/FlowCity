@@ -1,7 +1,8 @@
 import { Router } from "express";
+import { criarRelato } from "../controllers/relatosController.js";
 
 const router = Router();
 
-router.post("/", relatosController.js );
+router.post("/", criarRelato);
 
 export default router;
