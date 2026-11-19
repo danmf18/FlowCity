@@ -5,9 +5,18 @@ import {
     cadastrarUsuario
 } from "../controllers/authController.js";
 
-const router = express.Router();
+import {
+    realizarLogin,
+    registrarUsuario,
+    listarMunicipios
+} from "../controllers/authController.js";
+
+const router = Router();
 
 router.post("/login", realizarLogin);
-router.post("/registrar", cadastrarUsuario);
+
+router.post("/registrar", registrarUsuario);
+
+router.get("/municipios", listarMunicipios);
 
 export default router;

@@ -12,9 +12,18 @@ export default function Login() {
 
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
-
     const [mensagem, setMensagem] = useState("");
     const [carregando, setCarregando] = useState(false);
+
+    function obterDashboard(perfil) {
+        const dashboards = {
+            admin_geral: "/admin",
+            admin_municipal: "/admin-municipio",
+            cidadao: "/usuarios"
+        };
+
+        return dashboards[perfil] || "/";
+    }
 
     async function realizarLogin(e) {
         e.preventDefault();
@@ -23,47 +32,55 @@ export default function Login() {
         setCarregando(true);
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL;
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-            if (!API_URL) {
+            if (!apiUrl) {
                 throw new Error("URL da API não configurada.");
             }
 
-            const url = `${API_URL.replace(/\/$/, "")}/auth/login`;
+            const baseURL = apiUrl.replace(/\/+$/, "");
 
-            console.log("Enviando login para:", url);
+            const enderecoAPI = baseURL.endsWith("/api")
+                ? `${baseURL}/auth/login`
+                : `${baseURL}/api/auth/login`;
 
-            const resposta = await fetch(url, {
+            console.log("Enviando login para:", enderecoAPI);
+
+            const resposta = await fetch(enderecoAPI, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    email: email.trim().toLowerCase(),
+                    email: email.trim(),
                     senha
                 })
             });
 
-            const tipoConteudo = resposta.headers.get("content-type") || "";
+            const tipoConteudo =
+                resposta.headers.get("content-type");
 
-            if (!tipoConteudo.includes("application/json")) {
+            if (!tipoConteudo?.includes("application/json")) {
                 const texto = await resposta.text();
 
-                console.error("Resposta inesperada da API:", {
-                    status: resposta.status,
-                    url: resposta.url,
-                    resposta: texto
-                });
+                console.error("Resposta da API:", texto);
 
                 throw new Error(
-                    `A API retornou uma resposta inesperada (HTTP ${resposta.status}).`
+                    `A API não retornou JSON. Status: ${resposta.status}`
                 );
             }
 
             const dados = await resposta.json();
 
             if (!resposta.ok) {
-                setMensagem(dados.mensagem || "E-mail ou senha inválidos.");
+                setMensagem(
+                    dados.mensagem || "E-mail ou senha inválidos."
+                );
+                return;
+            }
+
+            if (!dados.token || !dados.usuario) {
+                setMensagem("Resposta inválida do servidor.");
                 return;
             }
 
@@ -78,13 +95,17 @@ export default function Login() {
                 JSON.stringify(dados.usuario)
             );
 
-            router.push("/");
+            router.replace(
+                obterDashboard(dados.usuario.perfil)
+            );
 
         } catch (erro) {
             console.error("Erro ao realizar login:", erro);
+            console.error("Erro ao realizar login:", erro);
 
             setMensagem(
-                erro.message || "Não foi possível conectar ao servidor."
+                erro.message ||
+                "Não foi possível conectar ao servidor."
             );
 
         } finally {
@@ -93,141 +114,174 @@ export default function Login() {
     }
 
     return (
-        <>
-            <section className="page-login">
+        <section className="page-login">
 
-                <div className="lado-esquerdo">
+            <div className="lado-esquerdo">
 
-                    <div className="img-lado-esquerdo">
-                        <img className="img-logo" src="/imagens/logo.png" alt="Logo" />
-                    </div>
+                <div className="img-lado-esquerdo">
+                    <img
+                        className="img-logo"
+                        src="/imagens/logo.png"
+                        alt="Logo AlertABC"
+                    />
+                </div>
 
-                    <div className="text-lado-esquerdo">
-                        <h1>
-                            Mais informação
-                            <span className="quebra-linha">para uma cidade</span>
-                            <span className="quebra-linha">mais segura.</span>
-                        </h1>
+                <div className="text-lado-esquerdo">
+                    <h1>
+                        Mais informação
+                        <span className="quebra-linha">
+                            para uma cidade
+                        </span>
+                        <span className="quebra-linha">
+                            mais segura.
+                        </span>
+                    </h1>
 
+                    <p>
+                        Acompanhe, registre e consulte relatos de
+                        <span className="quebra-linha">
+                            ocorrências por região. Juntos por uma
+                        </span>
+                        <span> comunidade mais informada.</span>
+                    </p>
+                </div>
+
+                <div className="icon-lado-esquerdo">
+
+                    <div className="icon">
+                        <i className="bi bi-geo-alt"></i>
+                        <h3>Mapa interativo</h3>
                         <p>
-                            Acompanhe, registre e consulte relatos de
+                            Visualize relatos por
                             <span className="quebra-linha">
-                                ocorrências por região. Juntos por uma
+                                localização.
                             </span>
-                            <span>comunidade mais informada.</span>
                         </p>
                     </div>
 
-                    <div className="icon-lado-esquerdo">
+                    <div className="icon">
+                        <i className="bi bi-file-earmark-plus"></i>
+                        <h3>Registro de relatos</h3>
+                        <p>
+                            Compartilhe informações
+                            <span className="quebra-linha">
+                                com a comunidade.
+                            </span>
+                        </p>
+                    </div>
 
-                        <div className="icon">
-                            <i className="bi bi-geo-alt"></i>
-                            <h3>Mapa interativo</h3>
-                            <p>Visualize relatos por localização.</p>
-                        </div>
-
-                        <div className="icon">
-                            <i className="bi bi-file-earmark-plus"></i>
-                            <h3>Registro de relatos</h3>
-                            <p>Compartilhe informações com a comunidade.</p>
-                        </div>
-
-                        <div className="icon">
-                            <i className="bi bi-shield-check"></i>
-                            <h3>Mais transparência</h3>
-                            <p>Acesse informações de forma organizada.</p>
-                        </div>
-
+                    <div className="icon">
+                        <i className="bi bi-shield-check"></i>
+                        <h3>Transparência</h3>
+                        <p>
+                            Consulte informações
+                            <span className="quebra-linha">
+                                de forma acessível.
+                            </span>
+                        </p>
                     </div>
 
                 </div>
 
-                <div className="lado-direito">
+            </div>
 
-                    <div className="container-info-lado-direito">
+            <div className="lado-direito">
 
-                        <div className="text-lado-direito">
-                            <h2>Acesse sua conta</h2>
-                            <p>Entre com seus dados para continuar.</p>
-                        </div>
+                <div className="container-info-lado-direito">
 
-                        <div className="forms-login">
+                    <div className="text-lado-direito">
+                        <h2>Acesse sua conta</h2>
+                        <p>Entre com seus dados para continuar.</p>
+                    </div>
 
-                            <form onSubmit={realizarLogin}>
+                    <div className="forms-login">
 
-                                <div className="inputs">
-                                    <p>E-mail</p>
+                        <form onSubmit={realizarLogin}>
 
-                                    <input
-                                        className="input-person"
-                                        type="email"
-                                        placeholder="seu@email.com"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        required
-                                    />
+                            <div className="inputs">
+                                <p>E-mail</p>
+
+                                <input
+                                    className="input-person"
+                                    type="email"
+                                    placeholder="seu@email.com"
+                                    value={email}
+                                    onChange={(e) =>
+                                        setEmail(e.target.value)
+                                    }
+                                    required
+                                />
+                            </div>
+
+                            <div className="input-person2">
+                                <p>Senha</p>
+
+                                <input
+                                    className="input-div"
+                                    type="password"
+                                    placeholder="Digite sua senha"
+                                    value={senha}
+                                    onChange={(e) =>
+                                        setSenha(e.target.value)
+                                    }
+                                    required
+                                />
+
+                                <a href="/esqueci-senha">
+                                    Esqueceu sua senha?
+                                </a>
+                            </div>
+
+                            <div className="botao-acao-container">
+
+                                <div className="botao-acao">
+                                    <button
+                                        type="submit"
+                                        disabled={carregando}
+                                    >
+                                        {carregando
+                                            ? "Entrando..."
+                                            : "Entrar"}
+
+                                        <i className="bi bi-arrow-right"></i>
+                                    </button>
                                 </div>
 
-                                <div className="input-person2">
-                                    <p>Senha</p>
-
-                                    <input
-                                        className="input-div"
-                                        type="password"
-                                        placeholder="Digite sua senha"
-                                        value={senha}
-                                        onChange={(e) => setSenha(e.target.value)}
-                                        required
-                                    />
-
-                                    <a href="/esqueci-senha">
-                                        Esqueceu sua senha?
+                                <div className="botao-acao2">
+                                    <a href="/cadastro">
+                                        <i className="bi bi-person-add"></i>
+                                        Criar uma conta
                                     </a>
                                 </div>
 
-                                <div className="botao-acao-container">
-
-                                    <div className="botao-acao">
-                                        <button type="submit" disabled={carregando}>
-                                            {carregando ? "Entrando..." : "Entrar"}
-                                            <i className="bi bi-arrow-right"></i>
-                                        </button>
-                                    </div>
-
-                                    <div className="botao-acao2">
-                                        <a href="/cadastro">
-                                            <i className="bi bi-person-add"></i>
-                                            Criar uma conta
-                                        </a>
-                                    </div>
-
-                                </div>
-
-                                {mensagem && (
-                                    <p className="mensagem-login">
-                                        {mensagem}
-                                    </p>
-                                )}
-
-                            </form>
-
-                            <div className="aviso">
-                                <p>
-                                    <i className="bi bi-shield-check"></i>
-                                    Seus dados estão protegidos e são usados apenas
-                                    <span className="quebra-linha">
-                                        para melhorar sua experiência na plataforma.
-                                    </span>
-                                </p>
                             </div>
 
+                            {mensagem && (
+                                <p className="mensagem-login">
+                                    {mensagem}
+                                </p>
+                            )}
+
+                        </form>
+
+                        <div className="aviso">
+                            <p>
+                                <i className="bi bi-shield-check"></i>
+                                Seus dados estão protegidos e são usados
+                                apenas
+                                <span className="quebra-linha">
+                                    para melhorar sua experiência na
+                                    plataforma.
+                                </span>
+                            </p>
                         </div>
 
                     </div>
 
                 </div>
 
-            </section>
-        </>
+            </div>
+
+        </section>
     );
 }

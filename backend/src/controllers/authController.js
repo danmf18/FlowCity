@@ -1,12 +1,10 @@
 
+
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { pool } from "../config/database.js";
 
-// ==========================================
-// LOGIN DE USUÁRIO
-// ==========================================
-
+// LOGIN
 export async function realizarLogin(request, response, next) {
     try {
         const { email, senha } = request.body;
@@ -24,7 +22,7 @@ export async function realizarLogin(request, response, next) {
              FROM contas
              WHERE email = ?
              LIMIT 1`,
-            [emailNormalizado]
+            [email.trim().toLowerCase()]
         );
 
         if (contas.length === 0) {
@@ -78,109 +76,168 @@ export async function realizarLogin(request, response, next) {
     }
 }
 
-
-// ==========================================
-// CADASTRO DE USUÁRIO
-// ==========================================
-
-export async function cadastrarUsuario(request, response) {
+// LISTAR MUNICÍPIOS PARA O CADASTRO
+export async function listarMunicipios(request, response, next) {
     try {
-        const { nome, email, senha, confirmarSenha } = request.body;
+        const [municipios] = await pool.execute(
+            `SELECT id_municipio, nome
+             FROM municipios
+             ORDER BY nome ASC`
+        );
 
-        // Validar preenchimento
+        return response.status(200).json({
+            municipios
+        });
+
+    } catch (error) {
+        next(error);
+    }
+}
+
+// CADASTRAR CIDADÃO
+export async function registrarUsuario(request, response, next) {
+    let connection;
+
+    try {
+        const {
+            nome,
+            email,
+            senha,
+            confirmarSenha,
+            id_municipio
+        } = request.body;
+
+        // Validar campos obrigatórios
         if (
-            typeof nome !== "string" ||
-            typeof email !== "string" ||
-            typeof senha !== "string" ||
-            typeof confirmarSenha !== "string" ||
-            !nome.trim() ||
-            !email.trim() ||
+            !nome?.trim() ||
+            !email?.trim() ||
             !senha ||
-            !confirmarSenha
+            !confirmarSenha ||
+            !id_municipio
         ) {
             return response.status(400).json({
                 mensagem: "Preencha todos os campos."
             });
         }
 
-        // Validar nome
-        if (nome.trim().length < 3) {
+        const nomeLimpo = nome.trim();
+        const emailLimpo = email.trim().toLowerCase();
+        const municipioId = Number(id_municipio);
+
+        if (nomeLimpo.length < 3) {
             return response.status(400).json({
                 mensagem: "Informe seu nome completo."
             });
         }
 
-        // Normalizar e validar e-mail
-        const emailNormalizado = email.trim().toLowerCase();
-
         const formatoEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-        if (!formatoEmail.test(emailNormalizado)) {
+        if (!formatoEmail.test(emailLimpo)) {
             return response.status(400).json({
                 mensagem: "Informe um e-mail válido."
             });
         }
 
-        // Validar senha
         if (senha.length < 8) {
             return response.status(400).json({
                 mensagem: "A senha deve ter pelo menos 8 caracteres."
             });
         }
 
-        // Confirmar senha
         if (senha !== confirmarSenha) {
             return response.status(400).json({
                 mensagem: "As senhas não coincidem."
             });
         }
 
-        // Verificar se o e-mail já existe
-        const [contaExistente] = await pool.execute(
+        if (!Number.isInteger(municipioId) || municipioId <= 0) {
+            return response.status(400).json({
+                mensagem: "Selecione um município válido."
+            });
+        }
+
+        // Verificar se o e-mail já está cadastrado
+        const [contasExistentes] = await pool.execute(
             `SELECT id_conta
              FROM contas
              WHERE email = ?
              LIMIT 1`,
-            [emailNormalizado]
+            [emailLimpo]
         );
 
-        if (contaExistente.length > 0) {
+        if (contasExistentes.length > 0) {
             return response.status(409).json({
                 mensagem: "Este e-mail já está cadastrado."
             });
         }
 
-        // Criptografar senha
-        const senhaHash = await bcrypt.hash(senha, 10);
+        // Gerar hash da senha
+        const senhaHash = await bcrypt.hash(senha, 12);
 
-        // Inserir usuário no banco
-        const [resultado] = await pool.execute(
+        // Iniciar transação
+        connection = await pool.getConnection();
+        await connection.beginTransaction();
+
+        // Verificar município
+        const [municipios] = await connection.execute(
+            `SELECT id_municipio
+             FROM municipios
+             WHERE id_municipio = ?
+             LIMIT 1`,
+            [municipioId]
+        );
+
+        if (municipios.length === 0) {
+            await connection.rollback();
+
+            return response.status(400).json({
+                mensagem: "O município selecionado não existe."
+            });
+        }
+
+        // Criar conta do cidadão
+        const [resultadoConta] = await connection.execute(
             `INSERT INTO contas
-             (nome, email, senha_hash, perfil, fk_id_municipio)
-             VALUES (?, ?, ?, ?, ?)`,
+                (nome, email, senha_hash, perfil, fk_id_municipio)
+             VALUES (?, ?, ?, 'cidadao', NULL)`,
             [
-                nome.trim(),
-                emailNormalizado,
-                senhaHash,
-                "cidadao",
-                null
+                nomeLimpo,
+                emailLimpo,
+                senhaHash
             ]
         );
 
-        return response.status(201).json({
-            sucesso: true,
-            mensagem: "Conta criada com sucesso!",
+        const idConta = resultadoConta.insertId;
 
+        // Associar cidadão ao município
+        await connection.execute(
+            `INSERT INTO contas_municipios
+                (fk_id_conta, fk_id_municipio)
+             VALUES (?, ?)`,
+            [
+                idConta,
+                municipioId
+            ]
+        );
+
+        // Confirmar as duas operações
+        await connection.commit();
+
+        return response.status(201).json({
+            mensagem: "Conta criada com sucesso!",
             usuario: {
-                id_conta: resultado.insertId,
-                nome: nome.trim(),
-                email: emailNormalizado,
-                perfil: "cidadao"
+                id: idConta,
+                nome: nomeLimpo,
+                email: emailLimpo,
+                perfil: "cidadao",
+                id_municipio: municipioId
             }
         });
 
     } catch (error) {
-        console.error("Erro ao cadastrar usuário:", error);
+        if (connection) {
+            await connection.rollback();
+        }
 
         if (error.code === "ER_DUP_ENTRY") {
             return response.status(409).json({
@@ -188,8 +245,11 @@ export async function cadastrarUsuario(request, response) {
             });
         }
 
-        return response.status(500).json({
-            mensagem: "Erro interno ao realizar cadastro."
-        });
+        next(error);
+
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 }

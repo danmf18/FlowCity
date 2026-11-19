@@ -1,11 +1,14 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import "@/app/cadastro/cadastro.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
+
+const API_URL =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 export default function Cadastro() {
     const router = useRouter();
@@ -14,10 +17,52 @@ export default function Cadastro() {
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
     const [confirmarSenha, setConfirmarSenha] = useState("");
+    const [idMunicipio, setIdMunicipio] = useState("");
+
+    const [municipios, setMunicipios] = useState([]);
+    const [carregandoMunicipios, setCarregandoMunicipios] = useState(true);
 
     const [mensagem, setMensagem] = useState("");
     const [tipoMensagem, setTipoMensagem] = useState("");
     const [carregando, setCarregando] = useState(false);
+
+    // Buscar municípios disponíveis no banco de dados
+    useEffect(() => {
+        async function buscarMunicipios() {
+            try {
+                const resposta = await fetch(`${API_URL}/auth/municipios`);
+
+                const tipoConteudo =
+                    resposta.headers.get("content-type") || "";
+
+                if (!tipoConteudo.includes("application/json")) {
+                    throw new Error(
+                        "O servidor retornou uma resposta inesperada ao carregar os municípios."
+                    );
+                }
+
+                const dados = await resposta.json();
+
+                if (!resposta.ok) {
+                    throw new Error(
+                        dados.mensagem ||
+                        "Não foi possível carregar os municípios."
+                    );
+                }
+
+                setMunicipios(dados.municipios || []);
+            } catch (erro) {
+                console.error("Erro ao buscar municípios:", erro);
+
+                setMensagem(erro.message);
+                setTipoMensagem("erro");
+            } finally {
+                setCarregandoMunicipios(false);
+            }
+        }
+
+        buscarMunicipios();
+    }, []);
 
     async function handleCadastro(e) {
         e.preventDefault();
@@ -25,8 +70,14 @@ export default function Cadastro() {
         setMensagem("");
         setTipoMensagem("");
 
-        // Validar campos
-        if (!nome.trim() || !email.trim() || !senha || !confirmarSenha) {
+        // Validar campos obrigatórios
+        if (
+            !nome.trim() ||
+            !email.trim() ||
+            !senha ||
+            !confirmarSenha ||
+            !idMunicipio
+        ) {
             setMensagem("Preencha todos os campos.");
             setTipoMensagem("erro");
             return;
@@ -39,7 +90,7 @@ export default function Cadastro() {
             return;
         }
 
-        // Validar formato do e-mail
+        // Validar e-mail
         const formatoEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         if (!formatoEmail.test(email.trim())) {
@@ -65,31 +116,25 @@ export default function Cadastro() {
         try {
             setCarregando(true);
 
-            const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-            if (!API_URL) {
-                throw new Error("URL da API não configurada.");
-            }
-
             const url = `${API_URL.replace(/\/$/, "")}/auth/registrar`;
-
-            console.log("Enviando cadastro para:", url);
 
             const resposta = await fetch(url, {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
                     nome: nome.trim(),
                     email: email.trim().toLowerCase(),
                     senha,
-                    confirmarSenha
-                })
+                    confirmarSenha,
+                    id_municipio: Number(idMunicipio),
+                }),
             });
 
-            // Verificar o tipo de resposta
-            const tipoConteudo = resposta.headers.get("content-type") || "";
+            // Verificar se a API retornou JSON
+            const tipoConteudo =
+                resposta.headers.get("content-type") || "";
 
             if (!tipoConteudo.includes("application/json")) {
                 const texto = await resposta.text();
@@ -97,7 +142,7 @@ export default function Cadastro() {
                 console.error("Resposta não JSON recebida:", {
                     status: resposta.status,
                     url: resposta.url,
-                    resposta: texto
+                    resposta: texto,
                 });
 
                 throw new Error(
@@ -107,23 +152,25 @@ export default function Cadastro() {
 
             const dados = await resposta.json();
 
-            // Verificar resposta da API
             if (!resposta.ok) {
                 throw new Error(
-                    dados.mensagem || "Não foi possível realizar o cadastro."
+                    dados.mensagem ||
+                    "Não foi possível realizar o cadastro."
                 );
             }
 
-            // Cadastro realizado
+            // Cadastro realizado com sucesso
             setMensagem(
                 "Conta criada com sucesso! Redirecionando para o login..."
             );
+
             setTipoMensagem("sucesso");
 
             setNome("");
             setEmail("");
             setSenha("");
             setConfirmarSenha("");
+            setIdMunicipio("");
 
             setTimeout(() => {
                 router.push("/login");
@@ -259,6 +306,36 @@ export default function Cadastro() {
                             </div>
 
                             <div className="inputs">
+                                <p>Município</p>
+
+                                <select
+                                    className="input-person select-municipio"
+                                    value={idMunicipio}
+                                    onChange={(e) =>
+                                        setIdMunicipio(e.target.value)
+                                    }
+                                    disabled={
+                                        carregando || carregandoMunicipios
+                                    }
+                                >
+                                    <option value="">
+                                        {carregandoMunicipios
+                                            ? "Carregando municípios..."
+                                            : "Selecione seu município"}
+                                    </option>
+
+                                    {municipios.map((municipio) => (
+                                        <option
+                                            key={municipio.id_municipio}
+                                            value={municipio.id_municipio}
+                                        >
+                                            {municipio.nome}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="inputs">
                                 <p>Senha</p>
 
                                 <input
@@ -306,11 +383,13 @@ export default function Cadastro() {
                             )}
 
                             <div className="botao-acao-container">
-
                                 <div className="botao-acao">
                                     <button
                                         type="submit"
-                                        disabled={carregando}
+                                        disabled={
+                                            carregando ||
+                                            carregandoMunicipios
+                                        }
                                     >
                                         {carregando
                                             ? "Criando conta..."
@@ -322,7 +401,6 @@ export default function Cadastro() {
                                         )}
                                     </button>
                                 </div>
-
                             </div>
 
                             <div className="link-login-cadastro">

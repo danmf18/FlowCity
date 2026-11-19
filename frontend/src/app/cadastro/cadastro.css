@@ -408,3 +408,33 @@ input {
     font-weight: 600;
     text-decoration: none;
 }
+<<<<<<< HEAD
+
+
+/* Campo de seleção do município */
+.select-municipio {
+    background-color: #fff;
+    color: #333;
+    cursor: pointer;
+    padding-left: 16px;
+    padding-right: 12px;
+}
+
+.select-municipio:disabled {
+    background-color: #f3f5f8;
+    cursor: not-allowed;
+}
+
+/* Garantir o mesmo tamanho dos campos */
+.inputs {
+    width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.inputs p {
+    margin: 0;
+}
+=======
+>>>>>>> main
