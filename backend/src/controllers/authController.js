@@ -1,4 +1,5 @@
 
+
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { pool } from "../config/database.js";
@@ -13,6 +14,8 @@ export async function realizarLogin(request, response, next) {
                 mensagem: "Informe o e-mail e a senha."
             });
         }
+
+        const emailNormalizado = email.trim().toLowerCase();
 
         const [contas] = await pool.execute(
             `SELECT id_conta, nome, email, senha_hash, perfil, fk_id_municipio

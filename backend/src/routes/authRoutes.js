@@ -1,5 +1,9 @@
+import express from "express";
 
-import { Router } from "express";
+import {
+    realizarLogin,
+    cadastrarUsuario
+} from "../controllers/authController.js";
 
 import {
     realizarLogin,

@@ -25,7 +25,7 @@ export default function Home() {
 
                         <h1>
                             Uma cidade mais
-                            <span> informada começa</span>
+                            <span> informada começa </span>
                             com você.
                         </h1>
 

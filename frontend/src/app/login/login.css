@@ -196,4 +196,25 @@
     font-size: 13px;
 }
 
+/* LINK ESQUECEU A SENHA */
 
+.link-esqueci-senha {
+    display: inline-block;
+    margin-top: 10px;
+    color: #2457C5;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.link-esqueci-senha:hover {
+    color: #173D91;
+    text-decoration: underline;
+}
+
+.link-esqueci-senha:focus-visible {
+    outline: 2px solid #2457C5;
+    outline-offset: 4px;
+    border-radius: 3px;
+}

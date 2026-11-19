@@ -84,6 +84,10 @@ export default function Login() {
                 return;
             }
 
+            if (!dados.token) {
+                throw new Error("A API não retornou o token de autenticação.");
+            }
+
             localStorage.setItem("token", dados.token);
 
             localStorage.setItem(
@@ -96,6 +100,7 @@ export default function Login() {
             );
 
         } catch (erro) {
+            console.error("Erro ao realizar login:", erro);
             console.error("Erro ao realizar login:", erro);
 
             setMensagem(
