@@ -218,3 +218,42 @@
     outline-offset: 4px;
     border-radius: 3px;
 }
+
+/* CAMPOS DA PÁGINA DE LOGIN */
+
+.forms-login input,
+.input-person,
+.input-div {
+    background-color: #FFFFFF !important;
+    color: #101B2D !important;
+    border: 1px solid #CBD5E1;
+    border-radius: 7px;
+}
+
+.forms-login input::placeholder {
+    color: #94A3B8;
+}
+
+/* BOTÃO ENTRAR */
+
+.botao-acao {
+    background-color: #2457C5 !important;
+    border: none;
+    padding: 0;
+    overflow: hidden;
+}
+
+.botao-acao button {
+    width: 100%;
+    min-height: 48px;
+    background-color: #2457C5 !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 7px;
+}
+
+.botao-acao button:hover {
+    background-color: #173D91 !important;
+}
