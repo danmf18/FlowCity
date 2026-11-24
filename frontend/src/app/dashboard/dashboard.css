@@ -1,0 +1,723 @@
+.home-alertabc {
+  --home-navy: #101B2D;
+  --home-blue: #2457C5;
+  --home-background: #F3F5F8;
+  --home-text: #182438;
+  --home-muted: #64748B;
+  --home-card: #FFFFFF;
+  --home-border: #E2E8F0;
+}
+
+.dash-wrapper {
+  min-height: 100vh;
+  background-color: var(--home-background);
+  color: var(--home-text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.dash-navbar {
+  background-color: var(--home-card);
+  border-bottom: 1px solid var(--home-border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.dash-navbar-inner {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0.9rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.dash-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dash-brand {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--home-navy);
+  text-decoration: none;
+}
+
+.dash-brand span {
+  color: var(--home-blue);
+}
+
+.dash-nav-divider {
+  width: 1px;
+  height: 22px;
+  background-color: var(--home-border);
+}
+
+.dash-nav-section {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--home-text);
+}
+
+.dash-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.dash-nav-link {
+  color: var(--home-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+
+.dash-nav-link:hover {
+  color: var(--home-blue);
+}
+
+.btn-limpar-nav {
+  background-color: #EEF2FF;
+  color: var(--home-blue);
+  border: 1px solid #C7D7FE;
+  border-radius: 8px;
+  padding: 0.42rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dash-main {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 1.75rem 1.75rem 3rem;
+}
+
+.dash-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.dash-page-header h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--home-navy);
+}
+
+.dash-page-header p {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
+  color: var(--home-muted);
+}
+
+.btn-limpar {
+  background-color: var(--home-card);
+  color: var(--home-text);
+  border: 1px solid var(--home-border);
+  border-radius: 10px;
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-limpar:hover:not(:disabled) {
+  border-color: var(--home-blue);
+  color: var(--home-blue);
+}
+
+.btn-limpar:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.filtros-card {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr)) minmax(280px, 1.3fr);
+  gap: 1rem;
+  background-color: var(--home-card);
+  border: 1px solid var(--home-border);
+  border-radius: 14px;
+  padding: 1.15rem 1.25rem;
+  box-shadow: 0 2px 10px rgba(16, 27, 45, 0.04);
+  margin-bottom: 1.25rem;
+}
+
+.filtro-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.filtro-item label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--home-text);
+}
+
+.filtro-item select,
+.filtro-item input {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: var(--home-card);
+  color: var(--home-text);
+  border: 1px solid #CBD5E1;
+  border-radius: 9px;
+  padding: 0.58rem 0.75rem;
+  font-size: 0.88rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.filtro-item select:focus,
+.filtro-item input:focus {
+  outline: none;
+  border-color: var(--home-blue);
+  box-shadow: 0 0 0 3px rgba(36, 87, 197, 0.12);
+}
+
+.periodo-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.periodo-sep {
+  font-size: 0.8rem;
+  color: var(--home-muted);
+  white-space: nowrap;
+}
+
+.capitalize {
+  text-transform: capitalize;
+}
+
+.dash-alerta {
+  background-color: var(--home-card);
+  border: 1px solid var(--home-border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  color: var(--home-muted);
+  font-size: 0.92rem;
+}
+
+.dash-alerta.erro {
+  background-color: #FEF2F2;
+  border-color: #FECACA;
+  color: #B91C1C;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  transition: opacity 0.2s ease;
+}
+
+.kpi-card {
+  background-color: var(--home-card);
+  border: 1px solid var(--home-border);
+  border-radius: 14px;
+  padding: 1.15rem 1.25rem;
+  box-shadow: 0 2px 10px rgba(16, 27, 45, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.kpi-head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--home-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.kpi-head svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  color: var(--home-muted);
+}
+
+.kpi-card strong {
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--home-navy);
+  line-height: 1.15;
+}
+
+.atualizando {
+  opacity: 0.55;
+}
+
+.dash-content-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+  align-items: stretch;
+  transition: opacity 0.2s ease;
+}
+
+.dash-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.dash-card {
+  background-color: var(--home-card);
+  border: 1px solid var(--home-border);
+  border-radius: 14px;
+  padding: 1.35rem 1.45rem;
+  box-shadow: 0 2px 10px rgba(16, 27, 45, 0.04);
+}
+
+.card-municipios {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1.15rem;
+}
+
+.card-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--home-navy);
+}
+
+.card-header p {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  color: var(--home-muted);
+}
+
+.vazio {
+  color: var(--home-muted);
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.municipios-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  flex: 1;
+  justify-content: center;
+}
+
+.municipio-linha {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.municipio-linha:hover {
+  background-color: #F8FAFC;
+}
+
+.municipio-linha.ativo {
+  background-color: #EEF2FF;
+}
+
+.municipio-nome {
+  text-align: right;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--home-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.municipio-barra-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.municipio-barra-fill {
+  height: 26px;
+  background-color: var(--home-blue);
+  border-radius: 6px;
+  transition: width 0.3s ease, background-color 0.15s ease;
+  flex-shrink: 1;
+  max-width: 66%;
+}
+
+.municipio-linha.ativo .municipio-barra-fill {
+  background-color: var(--home-navy);
+}
+
+.municipio-valor {
+  font-size: 0.85rem;
+  color: var(--home-navy);
+  white-space: nowrap;
+}
+
+.municipio-taxa {
+  font-size: 0.8rem;
+  color: var(--home-muted);
+  font-weight: 500;
+}
+
+.crimes-body {
+  display: grid;
+  grid-template-columns: 155px minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.donut-wrap {
+  position: relative;
+  width: 155px;
+  height: 155px;
+  margin: 0 auto;
+}
+
+.donut-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.donut-slice {
+  cursor: pointer;
+  transition: stroke-width 0.18s ease, opacity 0.18s ease;
+}
+
+.donut-centro {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+}
+
+.donut-centro strong {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--home-navy);
+}
+
+.donut-centro span {
+  font-size: 0.74rem;
+  color: var(--home-muted);
+}
+
+.crimes-legenda-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.crimes-barra-empilhada {
+  display: flex;
+  height: 14px;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: var(--home-background);
+  gap: 2px;
+}
+
+.crimes-barra-seg {
+  height: 100%;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.crimes-barra-seg:hover {
+  opacity: 0.85;
+}
+
+.crimes-legenda {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.crime-item {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.crime-item:hover,
+.crime-item.hover {
+  background-color: #F8FAFC;
+}
+
+.crime-item.ativo {
+  background-color: #EEF2FF;
+}
+
+.crime-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+}
+
+.crime-nome {
+  color: var(--home-text);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crime-qtd {
+  color: var(--home-muted);
+  font-weight: 700;
+}
+
+.toggle-grupo {
+  display: inline-flex;
+  background-color: var(--home-background);
+  border: 1px solid var(--home-border);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.toggle-grupo button {
+  border: none;
+  background: transparent;
+  color: var(--home-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toggle-grupo button.ativo {
+  background-color: var(--home-card);
+  color: var(--home-navy);
+  box-shadow: 0 1px 3px rgba(16, 27, 45, 0.1);
+}
+
+.linha-chart-wrap {
+  width: 100%;
+}
+
+.linha-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.linha-grid {
+  stroke: #E2E8F0;
+  stroke-width: 1;
+}
+
+.linha-eixo-texto {
+  fill: var(--home-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.linha-curva {
+  stroke: var(--home-navy);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.linha-ponto {
+  fill: var(--home-blue);
+  stroke: var(--home-card);
+  stroke-width: 1.5;
+  transition: r 0.15s ease;
+}
+
+.linha-ponto.ativo {
+  fill: var(--home-navy);
+}
+
+.linha-hit {
+  cursor: pointer;
+}
+
+.dash-bottom-section {
+  transition: opacity 0.2s ease;
+}
+
+.bairros-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1.75rem;
+}
+
+.bairro-item {
+  padding: 0.45rem 0.6rem;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.bairro-item:hover {
+  background-color: #F8FAFC;
+}
+
+.bairro-item.ativo {
+  background-color: #EEF2FF;
+}
+
+.bairro-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.86rem;
+}
+
+.bairro-nome {
+  font-weight: 600;
+  color: var(--home-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bairro-cidade {
+  font-style: normal;
+  font-weight: 500;
+  font-size: 0.78rem;
+  color: var(--home-muted);
+}
+
+.bairro-topo strong {
+  color: var(--home-navy);
+  font-weight: 700;
+}
+
+.bairro-trilha {
+  width: 100%;
+  height: 8px;
+  background-color: var(--home-background);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bairro-fill {
+  height: 100%;
+  background-color: var(--home-blue);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.bairro-item.ativo .bairro-fill {
+  background-color: var(--home-navy);
+}
+
+@media (max-width: 1120px) {
+  .filtros-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dash-content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .dash-main {
+    padding: 1.25rem 1rem 2.5rem;
+  }
+
+  .filtros-card,
+  .kpi-grid,
+  .bairros-grid,
+  .crimes-body {
+    grid-template-columns: 1fr;
+  }
+
+  .municipio-linha {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+
+  .municipio-nome {
+    text-align: left;
+  }
+
+  .periodo-inputs {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .periodo-sep {
+    display: none;
+  }
+}
+
+.bairro-numeros {
+  white-space: nowrap;
+}
+
+.bairro-taxa {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--home-muted);
+}
+
+.bairro-meta {
+  margin-top: 0.25rem;
+  font-size: 0.74rem;
+  color: var(--home-muted);
+}
