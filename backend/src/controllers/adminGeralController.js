@@ -640,3 +640,120 @@ export async function alterarSenhaConta(request, response) {
     });
   }
 }
+
+
+async function decidirRelato(request, response, next, resultado) {
+    const idRelato = Number(request.params.id);
+    const idResponsavel = Number(request.usuario.id);
+    const motivo = String(request.body.motivo || "").trim();
+
+    if (!Number.isInteger(idRelato) || idRelato <= 0) {
+        return response.status(400).json({
+            mensagem: "ID do relato inválido."
+        });
+    }
+
+    if (resultado === "Rejeitado" && !motivo) {
+        return response.status(400).json({
+            mensagem: "Informe o motivo da rejeição."
+        });
+    }
+
+    let conexao;
+
+    try {
+        conexao = await pool.getConnection();
+        await conexao.beginTransaction();
+
+        // Bloqueia o relato durante a decisão.
+        const [relatos] = await conexao.execute(
+            `SELECT id_relato, situacao
+             FROM relatos
+             WHERE id_relato = ?
+             FOR UPDATE`,
+            [idRelato]
+        );
+
+        if (!relatos.length) {
+            await conexao.rollback();
+
+            return response.status(404).json({
+                mensagem: "Relato não encontrado."
+            });
+        }
+
+        if (relatos[0].situacao !== "Pendente") {
+            await conexao.rollback();
+
+            return response.status(409).json({
+                mensagem: "Este relato já foi analisado."
+            });
+        }
+
+        const tipoAcao = resultado === "Aprovado"
+            ? "Aprovar relato"
+            : "Rejeitar relato";
+
+        // Registra a ação administrativa.
+        const [acao] = await conexao.execute(
+            `INSERT INTO acoes_administrativas
+                (tipo, detalhes, fk_id_conta_responsavel,
+                 fk_id_conta_afetada, fk_id_importacao)
+             VALUES (?, ?, ?, NULL, NULL)`,
+            [
+                tipoAcao,
+                resultado === "Rejeitado" ? motivo : null,
+                idResponsavel
+            ]
+        );
+
+        // Registra a decisão vinculada à ação e ao relato.
+        await conexao.execute(
+            `INSERT INTO decisoes
+                (resultado, motivo_rejeicao, fk_id_acao, fk_id_relato)
+             VALUES (?, ?, ?, ?)`,
+            [
+                resultado,
+                resultado === "Rejeitado" ? motivo : null,
+                acao.insertId,
+                idRelato
+            ]
+        );
+
+        // Atualiza a situação do relato.
+        await conexao.execute(
+            `UPDATE relatos
+             SET situacao = ?
+             WHERE id_relato = ?`,
+            [resultado, idRelato]
+        );
+
+        await conexao.commit();
+
+        return response.status(200).json({
+            mensagem: resultado === "Aprovado"
+                ? "Relato aprovado com sucesso."
+                : "Relato rejeitado com sucesso.",
+            situacao: resultado
+        });
+
+    } catch (error) {
+        if (conexao) {
+            await conexao.rollback();
+        }
+
+        next(error);
+    } finally {
+        if (conexao) {
+            conexao.release();
+        }
+    }
+}
+
+export async function aprovarRelato(request, response, next) {
+    return decidirRelato(request, response, next, "Aprovado");
+}
+
+export async function rejeitarRelato(request, response, next) {
+    return decidirRelato(request, response, next, "Rejeitado");
+}

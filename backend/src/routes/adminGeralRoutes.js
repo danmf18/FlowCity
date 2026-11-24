@@ -9,7 +9,9 @@ import {
     listarRelatosMapa,
     obterConfiguracoesConta,
     atualizarDadosConta,
-    alterarSenhaConta
+    alterarSenhaConta,
+    aprovarRelato,
+    rejeitarRelato
 } from "../controllers/adminGeralController.js";
 
 import { authMiddleware } from "../middlewares/authMiddleware.js";
@@ -33,4 +35,7 @@ router.get("/configuracoes", obterConfiguracoesConta);
 router.put("/configuracoes/dados", atualizarDadosConta);
 
 router.put("/configuracoes/senha", alterarSenhaConta);
+router.put("/relatos/:id/aprovar", aprovarRelato);
+router.put("/relatos/:id/rejeitar", rejeitarRelato);
+
 export default router;

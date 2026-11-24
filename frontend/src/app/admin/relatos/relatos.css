@@ -699,3 +699,48 @@
         max-width: 190px;
     }
 }
+
+
+.relato-modal-acoes {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.relato-aprovar-button,
+.relato-rejeitar-button {
+    flex: 1;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.relato-aprovar-button {
+    background: #198754;
+    color: #fff;
+}
+
+.relato-rejeitar-button {
+    background: #dc3545;
+    color: #fff;
+}
+
+.relato-aprovar-button:hover,
+.relato-rejeitar-button:hover {
+    filter: brightness(0.9);
+}
+
+.relato-aprovar-button:disabled,
+.relato-rejeitar-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+    .relato-modal-acoes {
+        flex-direction: column;
+    }
+}

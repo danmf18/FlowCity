@@ -1,8 +1,9 @@
-
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import "./recovery.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
 
 export default function EsqueciSenhaPage() {
     const [email, setEmail] = useState("");
@@ -18,7 +19,7 @@ export default function EsqueciSenhaPage() {
         }
 
         setMensagem(
-            "Solicitação realizada com sucesso! Se esse e-mail estiver cadastrado, você receberá as instruções para recuperar sua senha."
+            "Se esse endereço estiver cadastrado, você receberá as instruções para recuperar sua senha."
         );
 
         setEnviado(true);
@@ -31,11 +32,10 @@ export default function EsqueciSenhaPage() {
     }
 
     return (
-        <main className="recovery-page container-fluid d-flex align-items-center justify-content-center py-5">
+        <main className="recovery-page">
+            <section className="recovery-card">
 
-            <section className="recovery-card card border-0 shadow-sm p-4 p-md-5">
-
-                <div className="recovery-icon mx-auto mb-4 d-flex align-items-center justify-content-center">
+                <div className="recovery-icon">
                     {enviado ? (
                         <i className="bi bi-check-lg"></i>
                     ) : (
@@ -45,30 +45,24 @@ export default function EsqueciSenhaPage() {
 
                 {!enviado ? (
                     <>
-                        <h1 className="text-center fw-bold mb-3">
-                            Esqueceu sua senha?
-                        </h1>
+                        <h1>Esqueceu sua senha?</h1>
 
-                        <p className="recovery-description text-center mb-4">
+                        <p className="recovery-description">
                             Não se preocupe! Informe o e-mail associado
                             à sua conta para iniciar o processo de
                             recuperação de acesso ao AlertABC.
                         </p>
 
                         <form onSubmit={enviar}>
-
-                            <div className="mb-3">
-                                <label
-                                    htmlFor="email"
-                                    className="form-label fw-semibold"
-                                >
+                            <div className="recovery-field">
+                                <label htmlFor="email">
                                     Endereço de e-mail
                                 </label>
 
                                 <input
                                     id="email"
                                     type="email"
-                                    className="form-control recovery-input"
+                                    className="recovery-input"
                                     placeholder="seuemail@exemplo.com"
                                     value={email}
                                     onChange={(e) => {
@@ -81,50 +75,51 @@ export default function EsqueciSenhaPage() {
                             </div>
 
                             {mensagem && (
-                                <div className="alert alert-danger py-2">
+                                <div className="recovery-message recovery-error">
                                     {mensagem}
                                 </div>
                             )}
 
                             <button
                                 type="submit"
-                                className="btn recovery-button w-100"
+                                className="recovery-button"
                             >
                                 Recuperar senha
+                                <i className="bi bi-arrow-right"></i>
                             </button>
-
                         </form>
 
-                        <div className="text-center mt-4">
-                            <a href="/login" className="recovery-back">
-                                ← Voltar para o login
-                            </a>
+                        <div className="recovery-back-container">
+                            <Link href="/login" className="recovery-back">
+                                <i className="bi bi-arrow-left"></i>
+                                Voltar para o login
+                            </Link>
                         </div>
                     </>
                 ) : (
                     <>
-                        <h1 className="text-center fw-bold mb-3">
-                            Solicitação recebida!
-                        </h1>
+                        <h1>Solicitação recebida!</h1>
 
-                        <p className="recovery-description text-center mb-4">
+                        <p className="recovery-description">
                             {mensagem}
                         </p>
 
-                        <div className="recovery-email mb-4 text-center">
-                            {email}
+                        <div className="recovery-email">
+                            <i className="bi bi-envelope"></i>
+                            <span>{email}</span>
                         </div>
 
-                        <a
+                        <Link
                             href="/login"
-                            className="btn recovery-button w-100"
+                            className="recovery-button"
                         >
                             Voltar para o login
-                        </a>
+                            <i className="bi bi-arrow-right"></i>
+                        </Link>
 
                         <button
                             type="button"
-                            className="btn recovery-resend w-100 mt-3"
+                            className="recovery-resend"
                             onClick={voltar}
                         >
                             Utilizar outro e-mail
@@ -132,12 +127,11 @@ export default function EsqueciSenhaPage() {
                     </>
                 )}
 
-                <div className="recovery-footer text-center mt-4 pt-3">
+                <div className="recovery-footer">
                     AlertABC — Informação e transparência.
                 </div>
 
             </section>
-
         </main>
     );
 }

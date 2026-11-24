@@ -28,7 +28,7 @@ export default function SobreNos() {
       <path d="M11 11h1v1h-1zm0-2h1v1h-1zm-2 2h1v1H9zm0-2h1v1H9zm2-2h1v1h-1zm-2 0h1v1H9zm-2 2h1v1H7zm0-2h1v1H7zm-2 2h1v1H5zm0-2h1v1H5zM3 11h1v1H3zm0-2h1v1H3zm2-2h1v1H5zm-2 0h1v1H3z"/>
     </svg>
                 <div>
-                  <h2>3 Cidades</h2>
+                  <h2>7 Cidades</h2>
                   <p>do ABC mapeadas</p>
                 </div>
               </div>

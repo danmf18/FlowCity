@@ -1,12 +1,30 @@
 
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 import "./home.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 
 export default function Home() {
+    const [estaLogado, setEstaLogado] = useState(null);
+
+    useEffect(() => {
+        const verificarLogin = () => {
+            const token = localStorage.getItem("token");
+            setEstaLogado(!!token);
+        };
+
+        verificarLogin();
+
+        // Atualiza a verificação caso o login seja alterado em outra aba.
+        window.addEventListener("storage", verificarLogin);
+
+        return () => {
+            window.removeEventListener("storage", verificarLogin);
+        };
+    }, []);
 
     return (
         <main className="home-alertabc">
@@ -38,10 +56,12 @@ export default function Home() {
 
                         <div className="home-hero-actions">
 
-                            <Link href="/cadastro" className="home-button-primary">
-                                Começar agora
-                                <i className="bi bi-arrow-right"></i>
-                            </Link>
+                            {!estaLogado && (
+                                <Link href="/cadastro" className="home-button-primary">
+                                    Começar agora
+                                    <i className="bi bi-arrow-right"></i>
+                                </Link>
+                            )}
 
                             <Link href="/sobre" className="home-button-secondary">
                                 Conheça a plataforma
@@ -119,14 +139,33 @@ export default function Home() {
 
                             </div>
 
-                        </div>
+                            {/* CARDS PEQUENOS */}
+                            <div className="home-visual-small-cards">
 
-                        <div className="home-floating-card">
-                            <i className="bi bi-people"></i>
-                            <div>
-                                <strong>Colaboração</strong>
-                                <span>Juntos pela comunidade</span>
+                                <div className="home-floating-card">
+                                    <div className="home-floating-icon">
+                                        <i className="bi bi-people"></i>
+                                    </div>
+
+                                    <div>
+                                        <strong>Colaboração</strong>
+                                        <span>Juntos pela comunidade</span>
+                                    </div>
+                                </div>
+
+                                <div className="home-floating-card">
+                                    <div className="home-floating-icon">
+                                        <i className="bi bi-shield-check"></i>
+                                    </div>
+
+                                    <div>
+                                        <strong>Transparência</strong>
+                                        <span>Informação acessível</span>
+                                    </div>
+                                </div>
+
                             </div>
+
                         </div>
 
                     </div>
@@ -211,33 +250,35 @@ export default function Home() {
 
             </section>
 
-            {/* CHAMADA FINAL */}
-            <section className="home-cta">
+            {/* CHAMADA FINAL - SOMENTE PARA USUÁRIOS NÃO LOGADOS */}
+            {estaLogado === false && (
+                <section className="home-cta">
 
-                <div className="home-cta-content">
+                    <div className="home-cta-content">
 
-                    <div className="home-cta-icon">
-                        <i className="bi bi-shield-check"></i>
+                        <div className="home-cta-icon">
+                            <i className="bi bi-shield-check"></i>
+                        </div>
+
+                        <h2>
+                            Faça parte de uma comunidade
+                            <span> mais informada.</span>
+                        </h2>
+
+                        <p>
+                            Crie sua conta e conheça as possibilidades
+                            oferecidas pelo AlertABC.
+                        </p>
+
+                        <Link href="/cadastro" className="home-cta-button">
+                            Criar minha conta
+                            <i className="bi bi-arrow-right"></i>
+                        </Link>
+
                     </div>
 
-                    <h2>
-                        Faça parte de uma comunidade
-                        <span> mais informada.</span>
-                    </h2>
-
-                    <p>
-                        Crie sua conta e conheça as possibilidades
-                        oferecidas pelo AlertABC.
-                    </p>
-
-                    <Link href="/cadastro" className="home-cta-button">
-                        Criar minha conta
-                        <i className="bi bi-arrow-right"></i>
-                    </Link>
-
-                </div>
-
-            </section>
+                </section>
+            )}
 
         </main>
     );

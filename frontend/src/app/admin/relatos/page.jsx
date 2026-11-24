@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -98,6 +97,7 @@ export default function RelatosAdmin() {
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState("");
     const [relatoSelecionado, setRelatoSelecionado] = useState(null);
+    const [processandoDecisao, setProcessandoDecisao] = useState(false);
 
     const mapaContainerRef = useRef(null);
     const mapaRef = useRef(null);
@@ -366,6 +366,75 @@ export default function RelatosAdmin() {
 
     function formatarSituacao(valor) {
         return situacoes[valor] || valor;
+    }
+
+    // Aprovar ou rejeitar relato
+    async function decidirRelato(acao) {
+        if (!relatoSelecionado || processandoDecisao) return;
+
+        let motivo = "";
+
+        if (acao === "rejeitar") {
+            motivo = window.prompt("Informe o motivo da rejeição:");
+
+            if (motivo === null) return;
+
+            motivo = motivo.trim();
+
+            if (!motivo) {
+                alert("O motivo da rejeição é obrigatório.");
+                return;
+            }
+        }
+
+        const confirmacao = window.confirm(
+            acao === "aprovar"
+                ? "Deseja realmente aprovar este relato?"
+                : "Deseja realmente rejeitar este relato?"
+        );
+
+        if (!confirmacao) return;
+
+        try {
+            setProcessandoDecisao(true);
+
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                throw new Error("Faça login para continuar.");
+            }
+
+            const base = obterEnderecoAPI();
+
+            const resposta = await fetch(
+                `${base}/admin-geral/relatos/${relatoSelecionado.id_relato}/${acao}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ motivo })
+                }
+            );
+
+            const dados = await resposta.json();
+
+            if (!resposta.ok) {
+                throw new Error(
+                    dados.mensagem || "Não foi possível registrar a decisão."
+                );
+            }
+
+            alert(dados.mensagem);
+            setRelatoSelecionado(null);
+            await carregarRelatos();
+
+        } catch (error) {
+            alert(error.message || "Ocorreu um erro ao registrar a decisão.");
+        } finally {
+            setProcessandoDecisao(false);
+        }
     }
 
     return (
@@ -766,9 +835,32 @@ export default function RelatosAdmin() {
                             </div>
                         </div>
 
+                        {relatoSelecionado.situacao === "Pendente" && (
+                            <div className="relato-modal-acoes">
+                                <button
+                                    type="button"
+                                    className="relato-aprovar-button"
+                                    onClick={() => decidirRelato("aprovar")}
+                                    disabled={processandoDecisao}
+                                >
+                                    {processandoDecisao ? "Processando..." : "Aprovar relato"}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    className="relato-rejeitar-button"
+                                    onClick={() => decidirRelato("rejeitar")}
+                                    disabled={processandoDecisao}
+                                >
+                                    {processandoDecisao ? "Processando..." : "Rejeitar relato"}
+                                </button>
+                            </div>
+                        )}
+
                         <button
                             className="relato-modal-button"
                             onClick={() => setRelatoSelecionado(null)}
+                            disabled={processandoDecisao}
                         >
                             Fechar detalhes
                         </button>
