@@ -174,6 +174,7 @@ export async function alterarMinhaSenha(request, response, next) {
     }
 }
 
+// LISTAR RELATOS DO CIDADÃO
 export async function listarMeusRelatos(request, response, next) {
     try {
         const idConta = request.usuario.id;
@@ -199,11 +200,13 @@ export async function listarMeusRelatos(request, response, next) {
             mensagem: "Relatos consultados com sucesso.",
             relatos
         });
+
     } catch (erro) {
         next(erro);
     }
 }
 
+// CRIAR RELATO DO CIDADÃO
 export async function criarMeuRelato(request, response, next) {
     try {
         const {
@@ -217,8 +220,12 @@ export async function criarMeuRelato(request, response, next) {
             descricao
         } = request.body;
 
-        const descricaoLimpa = typeof descricao === "string" ? descricao.trim() : "";
-        const referenciaLimpa = typeof referencia === "string" ? referencia.trim() : "";
+        const descricaoLimpa =
+            typeof descricao === "string" ? descricao.trim() : "";
+
+        const referenciaLimpa =
+            typeof referencia === "string" ? referencia.trim() : "";
+
         const latitudeNumero = Number(latitude);
         const longitudeNumero = Number(longitude);
 
@@ -241,30 +248,51 @@ export async function criarMeuRelato(request, response, next) {
         }
 
         const dataValida = new Date(`${data}T00:00:00.000Z`);
-        if (Number.isNaN(dataValida.getTime()) || dataValida.toISOString().slice(0, 10) !== data) {
+
+        if (
+            Number.isNaN(dataValida.getTime()) ||
+            dataValida.toISOString().slice(0, 10) !== data
+        ) {
             return response.status(400).json({
                 mensagem: "Informe uma data válida para a ocorrência."
             });
         }
 
-        const [colunaAtiva] = await pool.execute(
-            "SHOW COLUMNS FROM categorias LIKE 'ativa'"
+        // DIAGNÓSTICO DA CATEGORIA
+        console.log(
+            "CATEGORIA RECEBIDA:",
+            JSON.stringify(categoria)
         );
-        const filtroCategoriaAtiva = colunaAtiva.length ? "AND ativa = TRUE" : "";
-        const [[categoriaEncontrada]] = await pool.execute(
-            `SELECT id_categoria
+
+        const [categoriasBanco] = await pool.execute(
+            `SELECT
+                id_categoria,
+                nome,
+                ativa,
+                HEX(nome) AS hexadecimal
              FROM categorias
-             WHERE nome = ? ${filtroCategoriaAtiva}
+             WHERE nome = ?
              LIMIT 1`,
             [categoria.trim()]
         );
 
-        if (!categoriaEncontrada) {
+        console.log(
+            "CATEGORIA ENCONTRADA:",
+            categoriasBanco
+        );
+
+        const categoriaEncontrada = categoriasBanco[0];
+
+        if (
+            !categoriaEncontrada ||
+            Number(categoriaEncontrada.ativa) !== 1
+        ) {
             return response.status(400).json({
                 mensagem: "Selecione uma categoria ativa válida."
             });
         }
 
+        // VALIDAR MUNICÍPIO
         const [[municipioEncontrado]] = await pool.execute(
             `SELECT id_municipio
              FROM municipios
@@ -279,6 +307,7 @@ export async function criarMeuRelato(request, response, next) {
             });
         }
 
+        // INSERIR RELATO
         const [resultado] = await pool.execute(
             `INSERT INTO relatos (
                 descricao,
@@ -311,6 +340,7 @@ export async function criarMeuRelato(request, response, next) {
             id_relato: resultado.insertId,
             situacao: "Pendente"
         });
+
     } catch (erro) {
         next(erro);
     }
