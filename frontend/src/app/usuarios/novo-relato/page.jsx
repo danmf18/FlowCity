@@ -7,6 +7,8 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+
 const categorias = [
     "Apreensão de Entorpecentes",
     "Estupro",
@@ -61,6 +63,7 @@ export default function NovoRelatoPage() {
     });
     const [mensagem, setMensagem] = useState("");
     const [mapaAberto, setMapaAberto] = useState(false);
+    const [enviando, setEnviando] = useState(false);
 
     useEffect(() => {
         if (!mapaAberto || !mapaRef.current || instanciaMapaRef.current) return;
@@ -107,7 +110,7 @@ export default function NovoRelatoPage() {
         setFormulario((anterior) => ({ ...anterior, [name]: value }));
     }
 
-    function enviarRelato(e) {
+    async function enviarRelato(e) {
         e.preventDefault();
 
         if (
@@ -122,9 +125,31 @@ export default function NovoRelatoPage() {
             return;
         }
 
-        setMensagem(
-            "Relato preenchido com sucesso! O envio ao banco de dados ainda não está disponível."
-        );
+        setEnviando(true);
+        setMensagem("");
+
+        try {
+            const token = localStorage.getItem("token");
+            const resposta = await fetch(`${API_URL}/usuario/relatos`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(formulario),
+            });
+            const dados = await resposta.json();
+
+            if (!resposta.ok) {
+                throw new Error(dados.mensagem || "Não foi possível enviar o relato.");
+            }
+
+            setMensagem("Relato enviado com sucesso e aguardando análise.");
+        } catch (erro) {
+            setMensagem(erro.message || "Não foi possível enviar o relato. Tente novamente.");
+        } finally {
+            setEnviando(false);
+        }
     }
 
     return (
@@ -218,7 +243,7 @@ export default function NovoRelatoPage() {
 
                     <div className="user-form-actions">
                         <button type="button" className="user-btn-secondary" onClick={() => router.push("/usuarios")}>Cancelar</button>
-                        <button type="submit" className="user-btn-primary"><i className="bi bi-send"></i>Enviar relato</button>
+                        <button type="submit" className="user-btn-primary" disabled={enviando}><i className="bi bi-send"></i>{enviando ? "Enviando..." : "Enviar relato"}</button>
                     </div>
                 </form>
             </section>

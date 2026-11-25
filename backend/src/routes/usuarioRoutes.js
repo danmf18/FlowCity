@@ -8,7 +8,8 @@ import {
     obterMeuPerfil,
     atualizarMeuPerfil,
     alterarMinhaSenha,
-    listarMeusRelatos
+    listarMeusRelatos,
+    criarMeuRelato
 } from "../controllers/usuarioController.js";
 const router = Router();
 
@@ -25,4 +26,5 @@ router.put("/perfil", atualizarMeuPerfil);
 router.patch("/senha", alterarMinhaSenha);
 
 router.get("/relatos", listarMeusRelatos);
+router.post("/relatos", criarMeuRelato);
 export default router;
