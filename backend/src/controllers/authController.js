@@ -195,32 +195,22 @@ export async function registrarUsuario(request, response, next) {
             });
         }
 
-        // Criar conta do cidadão
-        const [resultadoConta] = await connection.execute(
-            `INSERT INTO contas
-                (nome, email, senha_hash, perfil, fk_id_municipio)
-             VALUES (?, ?, ?, 'cidadao', NULL)`,
-            [
-                nomeLimpo,
-                emailLimpo,
-                senhaHash
-            ]
-        );
+// Criar conta do cidadão já associada ao município
+const [resultadoConta] = await connection.execute(
+    `INSERT INTO contas
+        (nome, email, senha_hash, perfil, fk_id_municipio)
+     VALUES (?, ?, ?, 'cidadao', ?)`,
+    [
+        nomeLimpo,
+        emailLimpo,
+        senhaHash,
+        municipioId
+    ]
+);
 
-        const idConta = resultadoConta.insertId;
+const idConta = resultadoConta.insertId;
 
-        // Associar cidadão ao município
-        await connection.execute(
-            `INSERT INTO contas_municipios
-                (fk_id_conta, fk_id_municipio)
-             VALUES (?, ?)`,
-            [
-                idConta,
-                municipioId
-            ]
-        );
-
-        // Confirmar as duas operações
+        // Confirmar cadastro
         await connection.commit();
 
         return response.status(201).json({

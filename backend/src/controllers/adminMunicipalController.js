@@ -524,22 +524,18 @@ export async function listarUsuariosMunicipais(request, response, next) {
     try {
         const [usuarios] = await pool.execute(
             `SELECT
-                c.id_conta,
-                c.nome,
-                c.email,
-                c.perfil
-             FROM contas c
-             INNER JOIN contas_municipios cm
-                ON cm.fk_id_conta = c.id_conta
-             WHERE cm.fk_id_municipio = ?
-               AND c.perfil = 'cidadao'
-             ORDER BY c.nome ASC`,
+                id_conta,
+                nome,
+                email,
+                perfil
+             FROM contas
+             WHERE fk_id_municipio = ?
+               AND perfil = 'cidadao'
+             ORDER BY nome ASC`,
             [request.municipioId]
         );
 
-        return response.status(200).json({
-            usuarios
-        });
+        return response.status(200).json({ usuarios });
 
     } catch (error) {
         tratarErro(error, next);
