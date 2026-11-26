@@ -12,6 +12,9 @@ import {
   restaurarImportacao,
   excluirPermanentemente,
   baixarArquivoImportacao,
+  obterItensImportacaoHandler,
+  confirmarImportacaoHandler,
+  cancelarImportacaoHandler,
 } from "../controllers/importacoesController.js";
 
 const router = express.Router();
@@ -50,6 +53,9 @@ const semTimeout = (req, res, next) => {
   next();
 };
 
+router.get("/:id/itens", obterItensImportacaoHandler);
+router.post("/:id/confirmar", semTimeout, confirmarImportacaoHandler);
+router.post("/:id/cancelar", cancelarImportacaoHandler);
 router.get("/meta", obterMetadados);
 router.get("/", listarImportacoes);
 router.get("/:id/arquivo", baixarArquivoImportacao);
@@ -59,5 +65,6 @@ router.get("/:id", obterImportacaoPorId);
 router.post("/", semTimeout, upload.single("arquivo"), criarImportacao);
 router.put("/:id", atualizarImportacao);
 router.delete("/:id", semTimeout, excluirImportacao);
+
 
 export default router;

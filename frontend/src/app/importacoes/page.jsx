@@ -5,6 +5,7 @@ import Link from 'next/link';
 import './importacoes.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const ITENS_POR_PAGINA = 50;
 
 function formatarDataHora(valor) {
   if (!valor) return '—';
@@ -16,6 +17,33 @@ function formatarDataHora(valor) {
 function formatarNumero(num) {
   if (num === null || num === undefined) return '0';
   return Number(num).toLocaleString('pt-BR');
+}
+
+function formatarResumoDadosLinha(dados) {
+  if (!dados || typeof dados !== 'object') return '—';
+
+  // Formato SSP-SP
+  if ('naturezaApurada' in dados || 'numBo' in dados || 'rubrica' in dados) {
+    const partes = [];
+    if (dados.numBo) partes.push(`BO: ${dados.numBo}`);
+    if (dados.naturezaApurada || dados.rubrica) {
+      partes.push(dados.naturezaApurada || dados.rubrica);
+    }
+    if (dados.bairro) partes.push(`Bairro: ${dados.bairro}`);
+    if (dados.dataOcorrencia || dados.dataRegistro) {
+      partes.push(`Data: ${dados.dataOcorrencia || dados.dataRegistro}`);
+    }
+    return partes.join(' • ') || '—';
+  }
+
+  // Formato IBGE Censo
+  if ('populacao' in dados) {
+    const local = dados.localidade || dados.bairro || dados.nomeMunicipio || '—';
+    const nivel = dados.nivel ? `[${dados.nivel}] ` : '';
+    return `${nivel}${local} • Pop.: ${formatarNumero(dados.populacao)}`;
+  }
+
+  return JSON.stringify(dados);
 }
 
 export default function AdminImportacoesPage() {
@@ -33,12 +61,18 @@ export default function AdminImportacoesPage() {
     fk_id_conta_responsavel: '1',
     pagina_origem: '',
     ano_censo: '2022',
+    inicio_periodo: '',
+    fim_periodo: '',
     arquivo: null,
   });
 
   const [editando, setEditando] = useState(null);
   const [detalhes, setDetalhes] = useState(null);
   const [carregandoDetalhes, setCarregandoDetalhes] = useState(false);
+
+  // Estado do modal de Prévia / Conferência linha a linha (RF05 / RF06 / RNF10)
+  const [previa, setPrevia] = useState(null);
+  const [carregandoPrevia, setCarregandoPrevia] = useState(false);
 
   const carregarLista = useCallback(async () => {
     setCarregando(true);
@@ -94,10 +128,57 @@ export default function AdminImportacoesPage() {
 
   const listaVisivel = abaAtiva === 'ativas' ? ativas : excluidas;
 
+  const carregarItensPrevia = useCallback(
+    async (infoBase, filtroResultado = '', pagina = 0) => {
+      setCarregandoPrevia(true);
+      try {
+        const params = new URLSearchParams({
+          limite: String(ITENS_POR_PAGINA),
+          offset: String(pagina * ITENS_POR_PAGINA),
+        });
+        if (filtroResultado) params.set('resultado', filtroResultado);
+
+        const res = await fetch(
+          `${API_URL}/importacoes/${infoBase.id_importacao}/itens?${params.toString()}`
+        );
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Erro ao carregar linhas conferidas.');
+
+        setPrevia({
+          id_importacao: infoBase.id_importacao,
+          nome_arquivo: infoBase.nome_arquivo || `Importação #${infoBase.id_importacao}`,
+          situacao: infoBase.situacao,
+          resumo: infoBase.resumo_resultado || infoBase.resumo || '',
+          filtroResultado,
+          pagina,
+          contagemPorResultado: json.contagemPorResultado || {},
+          itens: json.itens || [],
+        });
+      } catch (err) {
+        setMensagem({ tipo: 'erro', texto: err.message });
+      } finally {
+        setCarregandoPrevia(false);
+      }
+    },
+    []
+  );
+
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!formUpload.arquivo) {
       setMensagem({ tipo: 'erro', texto: 'Selecione uma planilha .xlsx antes de importar.' });
+      return;
+    }
+
+    if (
+      formUpload.inicio_periodo &&
+      formUpload.fim_periodo &&
+      formUpload.inicio_periodo > formUpload.fim_periodo
+    ) {
+      setMensagem({
+        tipo: 'erro',
+        texto: 'A data de início do período não pode ser posterior à data de fim.',
+      });
       return;
     }
 
@@ -109,6 +190,8 @@ export default function AdminImportacoesPage() {
       body.append('tipo', formUpload.tipo);
       body.append('fk_id_conta_responsavel', formUpload.fk_id_conta_responsavel);
       if (formUpload.pagina_origem) body.append('pagina_origem', formUpload.pagina_origem);
+      if (formUpload.inicio_periodo) body.append('inicio_periodo', formUpload.inicio_periodo);
+      if (formUpload.fim_periodo) body.append('fim_periodo', formUpload.fim_periodo);
       if (formUpload.tipo === 'censo') body.append('ano_censo', formUpload.ano_censo);
       body.append('arquivo', formUpload.arquivo);
 
@@ -118,21 +201,118 @@ export default function AdminImportacoesPage() {
       });
 
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Falha ao importar planilha.');
+      if (!res.ok) throw new Error(json.error || 'Falha ao conferir planilha.');
 
-      setMensagem({
-        tipo: 'sucesso',
-        texto: `Importação #${json.id_importacao} concluída: ${json.resumo}`,
-      });
-      setFormUpload((prev) => ({ ...prev, pagina_origem: '', arquivo: null }));
+      const nomeEnviado = formUpload.arquivo.name;
+
+      setFormUpload((prev) => ({
+        ...prev,
+        pagina_origem: '',
+        inicio_periodo: '',
+        fim_periodo: '',
+        arquivo: null,
+      }));
       const inputArq = document.getElementById('input-arquivo-xlsx');
       if (inputArq) inputArq.value = '';
       setAbaAtiva('ativas');
-      carregarLista();
+
+      await carregarLista();
+
+      if (json.situacao === 'AGUARDANDO_CONFIRMACAO') {
+        setMensagem({
+          tipo: 'sucesso',
+          texto: `Prévia #${json.id_importacao} pronta: ${json.resumo}. Revise abaixo e confirme ou cancele a publicação.`,
+        });
+        await carregarItensPrevia(
+          {
+            id_importacao: json.id_importacao,
+            nome_arquivo: nomeEnviado,
+            situacao: json.situacao,
+            resumo: json.resumo,
+          },
+          '',
+          0
+        );
+      } else {
+        setMensagem({
+          tipo: 'sucesso',
+          texto: `Importação #${json.id_importacao} concluída: ${json.resumo}`,
+        });
+      }
     } catch (err) {
       setMensagem({ tipo: 'erro', texto: err.message });
     } finally {
       setEnviando(false);
+    }
+  };
+
+  const confirmarPublicacao = async (item) => {
+    const id = item.id_importacao;
+    const confirmado = window.confirm(
+      `Confirmar a publicação dos registros aceitos da importação #${id} (${item.nome_arquivo})?`
+    );
+    if (!confirmado) return;
+
+    setProcessandoId(id);
+    setMensagem({ tipo: '', texto: '' });
+    try {
+      const res = await fetch(`${API_URL}/importacoes/${id}/confirmar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fk_id_conta_responsavel: formUpload.fk_id_conta_responsavel,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Falha ao confirmar publicação.');
+
+      setMensagem({
+        tipo: 'sucesso',
+        texto: `Importação #${id} publicada com sucesso (${formatarNumero(json.totalPublicados)} registros efetivamente publicados).`,
+      });
+      if (previa?.id_importacao === id) {
+        setPrevia(null);
+      }
+      carregarLista();
+    } catch (err) {
+      setMensagem({ tipo: 'erro', texto: err.message });
+    } finally {
+      setProcessandoId(null);
+    }
+  };
+
+  const cancelarImportacaoPendente = async (item) => {
+    const id = item.id_importacao;
+    const confirmado = window.confirm(
+      `Cancelar a importação #${id} (${item.nome_arquivo})? Nenhum registro dela será publicado.`
+    );
+    if (!confirmado) return;
+
+    setProcessandoId(id);
+    setMensagem({ tipo: '', texto: '' });
+    try {
+      const res = await fetch(`${API_URL}/importacoes/${id}/cancelar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fk_id_conta_responsavel: formUpload.fk_id_conta_responsavel,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Falha ao cancelar importação.');
+
+      setMensagem({
+        tipo: 'sucesso',
+        texto: `Importação #${id} cancelada antes da publicação.`,
+      });
+      if (previa?.id_importacao === id) {
+        setPrevia(null);
+      }
+      carregarLista();
+    } catch (err) {
+      setMensagem({ tipo: 'erro', texto: err.message });
+    } finally {
+      setProcessandoId(null);
     }
   };
 
@@ -199,6 +379,9 @@ export default function AdminImportacoesPage() {
       if (detalhes?.importacao?.id_importacao === item.id_importacao) {
         setDetalhes(null);
       }
+      if (previa?.id_importacao === item.id_importacao) {
+        setPrevia(null);
+      }
       carregarLista();
     } catch (err) {
       setMensagem({ tipo: 'erro', texto: err.message });
@@ -246,6 +429,9 @@ export default function AdminImportacoesPage() {
       if (detalhes?.importacao?.id_importacao === item.id_importacao) {
         setDetalhes(null);
       }
+      if (previa?.id_importacao === item.id_importacao) {
+        setPrevia(null);
+      }
       carregarLista();
     } catch (err) {
       setMensagem({ tipo: 'erro', texto: err.message });
@@ -254,13 +440,31 @@ export default function AdminImportacoesPage() {
     }
   };
 
+  const totalAceitosPrevia = Number(previa?.contagemPorResultado?.ACEITO || 0);
+  const totalDuplicadosPrevia = Number(previa?.contagemPorResultado?.DUPLICADO || 0);
+  const totalConflitantesPrevia = Number(previa?.contagemPorResultado?.CONFLITANTE || 0);
+  const totalProblemasPrevia = Number(previa?.contagemPorResultado?.PROBLEMA || 0);
+  const totalGeralPrevia =
+    totalAceitosPrevia +
+    totalDuplicadosPrevia +
+    totalConflitantesPrevia +
+    totalProblemasPrevia;
+
+  const totalFiltradoPrevia = previa?.filtroResultado
+    ? Number(previa?.contagemPorResultado?.[previa.filtroResultado] || 0)
+    : totalGeralPrevia;
+  const temProximaPagina =
+    previa && (previa.pagina + 1) * ITENS_POR_PAGINA < totalFiltradoPrevia;
+
   return (
     <div className="home-alertabc imp-wrapper">
       <main className="imp-main">
         <header className="imp-header">
           <div>
             <h1>GERENCIAR IMPORTAÇÕES</h1>
-            <p>Envio, auditoria, lixeira e restauração de planilhas oficiais (SSP-SP e Censo IBGE)</p>
+            <p>
+              Conferência, prévia, publicação, auditoria, lixeira e restauração de planilhas oficiais (SSP-SP e Censo IBGE)
+            </p>
           </div>
           <Link href="/dashboard" className="imp-btn-secundario">
             Ir para o Dashboard
@@ -274,7 +478,9 @@ export default function AdminImportacoesPage() {
         <section className="imp-card">
           <div className="imp-card-topo">
             <h2>Nova Importação</h2>
-            <span>Os arquivos enviados ficam arquivados e podem ser restaurados caso sejam excluídos</span>
+            <span>
+              Primeiro é gerada uma prévia com aceitos, duplicados, conflitantes e problemas antes da publicação
+            </span>
           </div>
 
           <form className="imp-form-grid" onSubmit={handleUpload}>
@@ -328,6 +534,30 @@ export default function AdminImportacoesPage() {
             )}
 
             <div className="imp-campo">
+              <label htmlFor="f-inicio">Início do Período (opcional)</label>
+              <input
+                id="f-inicio"
+                type="date"
+                value={formUpload.inicio_periodo}
+                onChange={(e) =>
+                  setFormUpload((prev) => ({ ...prev, inicio_periodo: e.target.value }))
+                }
+              />
+            </div>
+
+            <div className="imp-campo">
+              <label htmlFor="f-fim">Fim do Período (opcional)</label>
+              <input
+                id="f-fim"
+                type="date"
+                value={formUpload.fim_periodo}
+                onChange={(e) =>
+                  setFormUpload((prev) => ({ ...prev, fim_periodo: e.target.value }))
+                }
+              />
+            </div>
+
+            <div className="imp-campo">
               <label htmlFor="f-origem">Página de Origem (opcional)</label>
               <input
                 id="f-origem"
@@ -365,7 +595,7 @@ export default function AdminImportacoesPage() {
 
             <div className="imp-acoes-form">
               <button type="submit" className="imp-btn-primario" disabled={enviando}>
-                {enviando ? 'Processando planilha...' : 'Importar Planilha'}
+                {enviando ? 'Conferindo planilha...' : 'Conferir e Gerar Prévia'}
               </button>
             </div>
           </form>
@@ -431,10 +661,22 @@ export default function AdminImportacoesPage() {
                 </thead>
                 <tbody>
                   {listaVisivel.map((item) => {
-                    const totalVinculado =
-                      Number(item.total_registros_criminais) > 0
-                        ? `${formatarNumero(item.total_registros_criminais)} crimes`
-                        : `${formatarNumero(item.total_registros_censo)} censo`;
+                    const aguardando = item.situacao === 'AGUARDANDO_CONFIRMACAO';
+                    const cancelada = item.situacao === 'CANCELADA';
+                    const totalCrimes = Number(item.total_registros_criminais || 0);
+                    const totalCenso = Number(item.total_registros_censo || 0);
+
+                    let totalVinculado = '0 registros';
+                    if (totalCrimes > 0) {
+                      totalVinculado = `${formatarNumero(totalCrimes)} crimes`;
+                    } else if (totalCenso > 0) {
+                      totalVinculado = `${formatarNumero(totalCenso)} censo`;
+                    } else if (aguardando) {
+                      totalVinculado = 'Aguardando confirmação';
+                    } else if (cancelada) {
+                      totalVinculado = 'Não publicada';
+                    }
+
                     const ocupado = processandoId === item.id_importacao;
 
                     return (
@@ -462,14 +704,55 @@ export default function AdminImportacoesPage() {
                         </td>
                         <td data-label="Ações">
                           <div className="imp-btns-linha">
-                            <button
-                              type="button"
-                              className="imp-btn-acao"
-                              onClick={() => abrirDetalhes(item.id_importacao)}
-                              disabled={ocupado}
-                            >
-                              Ver
-                            </button>
+                            {aguardando && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="imp-btn-acao"
+                                  onClick={() => carregarItensPrevia(item, '', 0)}
+                                  disabled={ocupado}
+                                >
+                                  Prévia
+                                </button>
+                                <button
+                                  type="button"
+                                  className="imp-btn-acao confirmar"
+                                  onClick={() => confirmarPublicacao(item)}
+                                  disabled={ocupado}
+                                >
+                                  {ocupado ? '...' : 'Confirmar'}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="imp-btn-acao perigo"
+                                  onClick={() => cancelarImportacaoPendente(item)}
+                                  disabled={ocupado}
+                                >
+                                  Cancelar
+                                </button>
+                              </>
+                            )}
+
+                            {!aguardando && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="imp-btn-acao"
+                                  onClick={() => abrirDetalhes(item.id_importacao)}
+                                  disabled={ocupado}
+                                >
+                                  Ver
+                                </button>
+                                <button
+                                  type="button"
+                                  className="imp-btn-acao"
+                                  onClick={() => carregarItensPrevia(item, '', 0)}
+                                  disabled={ocupado}
+                                >
+                                  Linhas
+                                </button>
+                              </>
+                            )}
 
                             {Boolean(item.tem_arquivo) && (
                               <a
@@ -482,14 +765,16 @@ export default function AdminImportacoesPage() {
 
                             {abaAtiva === 'ativas' ? (
                               <>
-                                <button
-                                  type="button"
-                                  className="imp-btn-acao"
-                                  onClick={() => setEditando({ ...item })}
-                                  disabled={ocupado}
-                                >
-                                  Editar
-                                </button>
+                                {!aguardando && (
+                                  <button
+                                    type="button"
+                                    className="imp-btn-acao"
+                                    onClick={() => setEditando({ ...item })}
+                                    disabled={ocupado}
+                                  >
+                                    Editar
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   className="imp-btn-acao perigo"
@@ -529,6 +814,182 @@ export default function AdminImportacoesPage() {
             </div>
           )}
         </section>
+
+        {/* Modal de Prévia / Conferência linha a linha (RF05, RF06, RNF10) */}
+        {(carregandoPrevia || previa) && (
+          <div
+            className="imp-modal-backdrop"
+            onClick={() => !carregandoPrevia && setPrevia(null)}
+          >
+            <div className="imp-modal imp-modal-grande" onClick={(e) => e.stopPropagation()}>
+              <div className="imp-card-topo">
+                <div>
+                  <h2>
+                    {previa
+                      ? `Conferência da Importação #${previa.id_importacao}`
+                      : 'Carregando conferência...'}
+                  </h2>
+                  {previa && <small className="imp-sub">{previa.nome_arquivo}</small>}
+                </div>
+                <button
+                  type="button"
+                  className="imp-btn-acao"
+                  onClick={() => setPrevia(null)}
+                >
+                  Fechar
+                </button>
+              </div>
+
+              {previa && (
+                <>
+                  {previa.resumo && <p className="imp-previa-resumo">{previa.resumo}</p>}
+
+                  <div className="imp-previa-cards">
+                    <button
+                      type="button"
+                      className={`imp-previa-pill ${previa.filtroResultado === '' ? 'ativa' : ''}`}
+                      onClick={() => carregarItensPrevia(previa, '', 0)}
+                    >
+                      Todos ({formatarNumero(totalGeralPrevia)})
+                    </button>
+                    <button
+                      type="button"
+                      className={`imp-previa-pill aceito ${previa.filtroResultado === 'ACEITO' ? 'ativa' : ''}`}
+                      onClick={() => carregarItensPrevia(previa, 'ACEITO', 0)}
+                    >
+                      Aceitos ({formatarNumero(totalAceitosPrevia)})
+                    </button>
+                    <button
+                      type="button"
+                      className={`imp-previa-pill duplicado ${previa.filtroResultado === 'DUPLICADO' ? 'ativa' : ''}`}
+                      onClick={() => carregarItensPrevia(previa, 'DUPLICADO', 0)}
+                    >
+                      Duplicados ({formatarNumero(totalDuplicadosPrevia)})
+                    </button>
+                    <button
+                      type="button"
+                      className={`imp-previa-pill conflitante ${previa.filtroResultado === 'CONFLITANTE' ? 'ativa' : ''}`}
+                      onClick={() => carregarItensPrevia(previa, 'CONFLITANTE', 0)}
+                    >
+                      Conflitantes ({formatarNumero(totalConflitantesPrevia)})
+                    </button>
+                    <button
+                      type="button"
+                      className={`imp-previa-pill problema ${previa.filtroResultado === 'PROBLEMA' ? 'ativa' : ''}`}
+                      onClick={() => carregarItensPrevia(previa, 'PROBLEMA', 0)}
+                    >
+                      Problemas ({formatarNumero(totalProblemasPrevia)})
+                    </button>
+                  </div>
+
+                  {carregandoPrevia ? (
+                    <p className="imp-vazio">Carregando linhas...</p>
+                  ) : previa.itens.length === 0 ? (
+                    <p className="imp-vazio">Nenhuma linha encontrada para este filtro.</p>
+                  ) : (
+                    <div className="imp-tabela-wrap imp-previa-scroll">
+                      <table className="imp-tabela">
+                        <thead>
+                          <tr>
+                            <th>Aba / Linha</th>
+                            <th>Município</th>
+                            <th>Resultado</th>
+                            <th>Dados</th>
+                            <th>Motivo</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {previa.itens.map((it) => (
+                            <tr key={it.id_item_importacao}>
+                              <td data-label="Linha">
+                                {it.nome_aba || '—'} #{it.numero_linha}
+                              </td>
+                              <td data-label="Município" className="capitalize">
+                                {it.municipio_informado || '—'}
+                              </td>
+                              <td data-label="Resultado">
+                                <span
+                                  className={`imp-badge ${String(it.resultado || '').toLowerCase()}`}
+                                >
+                                  {it.resultado}
+                                </span>
+                              </td>
+                              <td data-label="Dados">
+                                <small>{formatarResumoDadosLinha(it.dados_recebidos)}</small>
+                              </td>
+                              <td data-label="Motivo">
+                                <small>{it.motivo || 'Pronto para publicação'}</small>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  <div className="imp-previa-rodape">
+                    <div className="imp-paginacao">
+                      <button
+                        type="button"
+                        className="imp-btn-acao"
+                        disabled={previa.pagina === 0 || carregandoPrevia}
+                        onClick={() =>
+                          carregarItensPrevia(previa, previa.filtroResultado, previa.pagina - 1)
+                        }
+                      >
+                        Anterior
+                      </button>
+                      <small className="imp-sub">
+                        Página {previa.pagina + 1} de{' '}
+                        {Math.max(1, Math.ceil(totalFiltradoPrevia / ITENS_POR_PAGINA))}
+                      </small>
+                      <button
+                        type="button"
+                        className="imp-btn-acao"
+                        disabled={!temProximaPagina || carregandoPrevia}
+                        onClick={() =>
+                          carregarItensPrevia(previa, previa.filtroResultado, previa.pagina + 1)
+                        }
+                      >
+                        Próxima
+                      </button>
+                    </div>
+
+                    {previa.situacao === 'AGUARDANDO_CONFIRMACAO' && (
+                      <div className="imp-acoes-modal">
+                        <button
+                          type="button"
+                          className="imp-btn-acao perigo"
+                          disabled={processandoId === previa.id_importacao}
+                          onClick={() => cancelarImportacaoPendente(previa)}
+                        >
+                          Cancelar Importação
+                        </button>
+                        <button
+                          type="button"
+                          className="imp-btn-primario"
+                          disabled={
+                            totalAceitosPrevia === 0 || processandoId === previa.id_importacao
+                          }
+                          title={
+                            totalAceitosPrevia === 0
+                              ? 'É necessário ao menos 1 registro aceito para publicar (RN14).'
+                              : 'Publicar registros aceitos'
+                          }
+                          onClick={() => confirmarPublicacao(previa)}
+                        >
+                          {processandoId === previa.id_importacao
+                            ? 'Publicando...'
+                            : `Confirmar Publicação (${formatarNumero(totalAceitosPrevia)})`}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {editando && (
           <div className="imp-modal-backdrop" onClick={() => setEditando(null)}>
@@ -594,13 +1055,16 @@ export default function AdminImportacoesPage() {
                 <div className="imp-campo">
                   <label>Situação</label>
                   <select
-                    value={editando.situacao || 'CONCLUIDA'}
+                    value={editando.situacao || 'PUBLICADA'}
                     onChange={(e) =>
                       setEditando((prev) => ({ ...prev, situacao: e.target.value }))
                     }
                   >
+                    <option value="PUBLICADA">PUBLICADA</option>
+                    <option value="AGUARDANDO_CONFIRMACAO">AGUARDANDO_CONFIRMACAO</option>
+                    <option value="CANCELADA">CANCELADA</option>
                     <option value="CONCLUIDA">CONCLUIDA</option>
-                    <option value="PROCESSANDO">PROCESSANDO</option>
+                    <option value="EM_PROCESSO">EM_PROCESSO</option>
                     <option value="ERRO">ERRO</option>
                     <option value="ARQUIVADA">ARQUIVADA</option>
                   </select>
@@ -643,13 +1107,22 @@ export default function AdminImportacoesPage() {
                   : 'Carregando detalhes...'}
               </h2>
               {detalhes && (
-                <button
-                  type="button"
-                  className="imp-btn-acao"
-                  onClick={() => setDetalhes(null)}
-                >
-                  Fechar
-                </button>
+                <div className="imp-btns-linha">
+                  <button
+                    type="button"
+                    className="imp-btn-acao"
+                    onClick={() => carregarItensPrevia(detalhes.importacao, '', 0)}
+                  >
+                    Ver linhas conferidas
+                  </button>
+                  <button
+                    type="button"
+                    className="imp-btn-acao"
+                    onClick={() => setDetalhes(null)}
+                  >
+                    Fechar
+                  </button>
+                </div>
               )}
             </div>
 

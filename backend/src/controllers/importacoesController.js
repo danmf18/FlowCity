@@ -5,6 +5,9 @@ import {
   recalcularPopulacaoRegistros,
   importarPlanilhaCenso,
   importarPlanilhaCrimes,
+  confirmarImportacao,
+  cancelarImportacao,
+  listarItensImportacao,
 } from "../services/importacaoEtlService.js";
 
 function parseId(valor) {
@@ -487,3 +490,57 @@ export const baixarArquivoImportacao = async (req, res) => {
     res.status(500).json({ error: "Erro ao baixar arquivo." });
   }
 };
+
+
+export async function confirmarImportacaoHandler(req, res) {
+  try {
+    const idImportacao = Number(req.params.id);
+    if (!Number.isInteger(idImportacao) || idImportacao <= 0) {
+      return res.status(400).json({ error: "ID de importação inválido." });
+    }
+    const contaId = Number(req.body?.fk_id_conta_responsavel || 1);
+    const resultado = await confirmarImportacao({ idImportacao, contaId });
+    return res.status(200).json(resultado);
+  } catch (err) {
+    return res.status(err.status || 500).json({
+      error: err.message || "Erro ao confirmar importação.",
+      codigo: err.codigo || "ERRO_INTERNO",
+    });
+  }
+}
+
+export async function cancelarImportacaoHandler(req, res) {
+  try {
+    const idImportacao = Number(req.params.id);
+    if (!Number.isInteger(idImportacao) || idImportacao <= 0) {
+      return res.status(400).json({ error: "ID de importação inválido." });
+    }
+    const contaId = Number(req.body?.fk_id_conta_responsavel || 1);
+    const resultado = await cancelarImportacao({ idImportacao, contaId });
+    return res.status(200).json(resultado);
+  } catch (err) {
+    return res.status(err.status || 500).json({
+      error: err.message || "Erro ao cancelar importação.",
+      codigo: err.codigo || "ERRO_INTERNO",
+    });
+  }
+}
+
+export async function obterItensImportacaoHandler(req, res) {
+  try {
+    const idImportacao = Number(req.params.id);
+    if (!Number.isInteger(idImportacao) || idImportacao <= 0) {
+      return res.status(400).json({ error: "ID de importação inválido." });
+    }
+    const dados = await listarItensImportacao(idImportacao, {
+      resultado: req.query.resultado,
+      limite: req.query.limite,
+      offset: req.query.offset,
+    });
+    return res.status(200).json(dados);
+  } catch (err) {
+    return res.status(err.status || 500).json({
+      error: err.message || "Erro ao consultar itens da importação.",
+    });
+  }
+}

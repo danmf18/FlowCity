@@ -5,6 +5,9 @@ CREATE DATABASE IF NOT EXISTS alertabc;
 
 USE alertabc;
 
+SET FOREIGN_KEY_CHECKS = 0;
+
+
 SELECT DATABASE();
 
 SHOW CREATE DATABASE alertabc;
@@ -205,69 +208,6 @@ VALUES
 );
 
 
--- ==================== IMPORTAÇÕES ====================
-
-CREATE TABLE importacoes(
-
-    id_importacao INT AUTO_INCREMENT PRIMARY KEY,
-
-    nome_arquivo VARCHAR(255) NOT NULL,
-
-    pagina_origem VARCHAR(500) NOT NULL,
-
-    inicio_periodo DATE NOT NULL,
-
-    fim_periodo DATE NOT NULL,
-
-    enviada_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    situacao VARCHAR(30) NOT NULL,
-
-    resumo_resultado TEXT,
-
-    fk_id_conta_responsavel INT NOT NULL,
-
-    fk_id_fonte INT NOT NULL,
-
-
-    FOREIGN KEY (fk_id_conta_responsavel)
-        REFERENCES contas(id_conta),
-
-    FOREIGN KEY (fk_id_fonte)
-        REFERENCES fontes(id_fonte)
-
-);
-
-
--- ==================== ITEM IMPORTAÇÃO ====================
-
-CREATE TABLE item_importacao (
-
-    id_item_importacao INT AUTO_INCREMENT PRIMARY KEY,
-
-    numero_linha INT NOT NULL,
-
-    dados_recebidos TEXT NOT NULL,
-
-    resultado VARCHAR(30) NOT NULL,
-
-    motivo VARCHAR(255),
-
-    municipio_informado VARCHAR(100),
-
-    nome_aba VARCHAR(100) NOT NULL,
-
-    fk_id_importacao INT NOT NULL,
-
-
-    UNIQUE (fk_id_importacao, nome_aba, numero_linha),
-
-
-    FOREIGN KEY (fk_id_importacao)
-        REFERENCES importacoes(id_importacao)
-
-);
-
 
 -- ==================== AÇÕES ADMINISTRATIVAS ====================
 
@@ -367,63 +307,176 @@ CREATE TABLE decisoes(
 );
 
 
+
+
+-- Limpa eventuais vínculos antigos de auditoria antes de recriar as tabelas de importação
+UPDATE acoes_administrativas
+SET fk_id_importacao = NULL
+WHERE fk_id_importacao IS NOT NULL;
+
+DROP TABLE IF EXISTS registro_oficial;
+DROP TABLE IF EXISTS censo_demografico;
+DROP TABLE IF EXISTS item_importacao;
+DROP TABLE IF EXISTS importacoes;
+DROP TABLE IF EXISTS fontes;
+
+-- ==================== FONTES ====================
+CREATE TABLE fontes (
+  id_fonte INT AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(150) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO fontes (id_fonte, nome) VALUES
+  (1, 'IBGE - Censo Demográfico'),
+  (2, 'SSP-SP - Dados Criminais');
+
+-- ==================== IMPORTAÇÕES ====================
+CREATE TABLE importacoes (
+  id_importacao INT AUTO_INCREMENT PRIMARY KEY,
+  nome_arquivo VARCHAR(255) NOT NULL,
+  caminho_arquivo VARCHAR(500) NULL,
+  hash_arquivo CHAR(64) NULL,
+  pagina_origem VARCHAR(500) NULL,
+  inicio_periodo DATE NULL,
+  fim_periodo DATE NULL,
+  enviada_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  excluida_em TIMESTAMP NULL DEFAULT NULL,
+  situacao VARCHAR(30) NOT NULL,
+  resumo_resultado TEXT NULL,
+  fk_id_conta_responsavel INT NOT NULL,
+  fk_id_fonte INT NOT NULL,
+  INDEX idx_importacoes_conta (fk_id_conta_responsavel),
+  INDEX idx_importacoes_fonte (fk_id_fonte),
+  INDEX idx_importacoes_excluida (excluida_em),
+  INDEX idx_importacoes_hash (hash_arquivo),
+  CONSTRAINT fk_importacoes_conta
+    FOREIGN KEY (fk_id_conta_responsavel) REFERENCES contas(id_conta),
+  CONSTRAINT fk_importacoes_fonte
+    FOREIGN KEY (fk_id_fonte) REFERENCES fontes(id_fonte)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ==================== ITEM IMPORTAÇÃO ====================
+CREATE TABLE item_importacao (
+  id_item_importacao INT AUTO_INCREMENT PRIMARY KEY,
+  numero_linha INT NOT NULL,
+  dados_recebidos TEXT NULL,
+  resultado VARCHAR(30) NOT NULL,
+  motivo VARCHAR(255) NULL,
+  municipio_informado VARCHAR(100) NULL,
+  nome_aba VARCHAR(100) NULL,
+  fk_id_importacao INT NOT NULL,
+  INDEX idx_item_importacao_imp (fk_id_importacao),
+  INDEX idx_item_importacao_resultado (fk_id_importacao, resultado),
+  UNIQUE KEY uq_item_importacao_linha (fk_id_importacao, nome_aba, numero_linha),
+  CONSTRAINT fk_item_importacao
+    FOREIGN KEY (fk_id_importacao) REFERENCES importacoes(id_importacao)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ==================== CENSO DEMOGRÁFICO ====================
+CREATE TABLE censo_demografico (
+  id_censo INT AUTO_INCREMENT PRIMARY KEY,
+  ano_censo SMALLINT UNSIGNED NOT NULL,
+  nivel_territorial VARCHAR(20) NOT NULL,
+  cod_ibge CHAR(7) NOT NULL,
+  nome_municipio VARCHAR(150) NOT NULL,
+  bairro VARCHAR(150) NULL,
+  populacao INT UNSIGNED NOT NULL,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  chave_identificacao CHAR(64) NULL,
+  hash_conteudo CHAR(64) NULL,
+  fk_id_municipio INT NOT NULL,
+  fk_id_importacao INT NOT NULL,
+  fk_id_item_origem INT NOT NULL UNIQUE,
+  INDEX idx_censo_municipio_bairro (nome_municipio, bairro),
+  INDEX idx_censo_cod_ibge (cod_ibge),
+  INDEX idx_censo_importacao (fk_id_importacao),
+  INDEX idx_censo_ativo (ativo),
+  INDEX idx_censo_chave (chave_identificacao),
+  CONSTRAINT fk_censo_municipio
+    FOREIGN KEY (fk_id_municipio) REFERENCES municipios(id_municipio),
+  CONSTRAINT fk_censo_importacao
+    FOREIGN KEY (fk_id_importacao) REFERENCES importacoes(id_importacao),
+  CONSTRAINT fk_censo_item
+    FOREIGN KEY (fk_id_item_origem) REFERENCES item_importacao(id_item_importacao)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ==================== REGISTROS OFICIAIS ====================
-
 CREATE TABLE registro_oficial (
+  id_ocorrencia INT AUTO_INCREMENT PRIMARY KEY,
+  nome_departamento VARCHAR(150) NULL,
+  nome_municipio VARCHAR(150) NULL,
+  data_registro DATE NULL,
+  num_bo VARCHAR(150) NULL,
+  data_ocorrencia_bo DATE NULL,
+  hora_ocorrencia_bo TIME NULL,
+  bairro VARCHAR(150) NULL,
+  latitude DECIMAL(11, 8) NULL,
+  longitude DECIMAL(11, 8) NULL,
+  geom POINT NULL,
+  rubrica VARCHAR(255) NULL,
+  descr_conduta TEXT NULL,
+  natureza_apurada VARCHAR(255) NULL,
+  cod_ibge INT NULL,
+  populacao_bairro INT NULL,
+  populacao_municipio INT NULL,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  chave_identificacao CHAR(64) NULL,
+  hash_conteudo CHAR(64) NULL,
+  fk_id_municipio INT NULL,
+  fk_id_importacao INT NULL,
+  fk_id_item_origem INT NULL UNIQUE,
+  INDEX idx_ocorrencias_data (data_ocorrencia_bo),
+  INDEX idx_ocorrencias_cod_ibge (cod_ibge),
+  INDEX idx_ocorrencias_municipio_bairro (nome_municipio, bairro),
+  INDEX idx_ocorrencias_natureza (natureza_apurada),
+  INDEX idx_ocorrencias_lat_lng (latitude, longitude),
+  INDEX idx_ocorrencias_importacao (fk_id_importacao),
+  INDEX idx_ocorrencias_ativo (ativo),
+  INDEX idx_ocorrencias_chave (chave_identificacao),
+  CONSTRAINT fk_registro_municipio
+    FOREIGN KEY (fk_id_municipio) REFERENCES municipios(id_municipio),
+  CONSTRAINT fk_registro_importacao
+    FOREIGN KEY (fk_id_importacao) REFERENCES importacoes(id_importacao),
+  CONSTRAINT fk_registro_item
+    FOREIGN KEY (fk_id_item_origem) REFERENCES item_importacao(id_item_importacao)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    id_registro INT AUTO_INCREMENT PRIMARY KEY,
+SET FOREIGN_KEY_CHECKS = 1;
 
-    numero_boletim VARCHAR(50),
+/* ============================================================================
+   RESUMO DA FUNÇÃO DE CADA TABELA (VERSÃO FINAL COM PRÉVIA E DEDUPLICAÇÃO)
+   ============================================================================
 
-    ano_boletim SMALLINT,
+   1. fontes
+      Cadastra as instituições oficiais de origem das planilhas importadas
+      (1 = IBGE - Censo Demográfico; 2 = SSP-SP - Dados Criminais).
 
-    rubrica_original VARCHAR(255),
+   2. importacoes
+      Cabeçalho de cada upload de planilha .xlsx feito no painel administrativo.
+      Armazena o nome do arquivo, caminho físico para download (caminho_arquivo),
+      hash SHA-256 do arquivo (hash_arquivo), responsável, fonte, período,
+      resumo da conferência, ciclo de situação (EM_PROCESSO, AGUARDANDO_CONFIRMACAO,
+      PUBLICADA, CANCELADA, ERRO, EXCLUIDA) e controle de lixeira (excluida_em).
 
-    natureza_apurada_original VARCHAR(255),
+   3. item_importacao
+      Log linha por linha da conferência (prévia). Armazena aba, número da linha
+      (único por importação/aba), retrato em JSON dos dados (dados_recebidos),
+      classificação (ACEITO, DUPLICADO, CONFLITANTE ou PROBLEMA) e motivo.
+      Alimenta o modal de prévia e serve de origem para a publicação confirmada.
 
-    data_fato DATE,
+   4. censo_demografico
+      Armazena a população oficial do Censo IBGE para os 7 municípios do Grande
+      ABC e seus bairros (nivel_territorial). Inclui chave_identificacao e
+      hash_conteudo (SHA-256) para impedir duplicidade e detectar conflitos,
+      além da flag ativo (1/0) para lixeira e restauração.
 
-    hora_fato TIME,
+   5. registro_oficial
+      Armazena cada ocorrência criminal da SSP-SP publicada para o Grande ABC,
+      com dados do boletim, bairro padronizado via censo, coordenadas validadas,
+      ponto espacial geom, população vinculada e hashes chave_identificacao /
+      hash_conteudo para controle de duplicidade (RN12) e conflitos (RN15),
+      preservando múltiplos registros do mesmo boletim (RN17).
 
-    data_registro DATE,
-
-    bairro VARCHAR(255),
-
-    logradouro VARCHAR(255),
-
-    numero_logradouro VARCHAR(30),
-
-    tipo_local VARCHAR(150),
-
-    subtipo_local VARCHAR(150),
-
-    latitude DECIMAL(9,6),
-
-    longitude DECIMAL(10,6),
-
-    mes_estatistica TINYINT UNSIGNED,
-
-    ano_estatistica SMALLINT UNSIGNED,
-
-    fk_id_item_origem INT NOT NULL UNIQUE,
-
-    fk_id_municipio INT NOT NULL,
-
-    fk_id_categoria INT NOT NULL,
-
-
-    FOREIGN KEY (fk_id_item_origem)
-        REFERENCES item_importacao(id_item_importacao),
-
-    FOREIGN KEY (fk_id_municipio)
-        REFERENCES municipios(id_municipio),
-
-    FOREIGN KEY (fk_id_categoria)
-        REFERENCES categorias(id_categoria)
-
-);
-
-
--- ==================== CONFERÊNCIA ====================
-
-SHOW TABLES;
+   Fluxo de relacionamento:
+   fontes -> importacoes -> item_importacao -> censo_demografico / registro_oficial
+   ============================================================================ */
