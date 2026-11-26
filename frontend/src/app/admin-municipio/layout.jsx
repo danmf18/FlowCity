@@ -6,7 +6,6 @@ import "./admin-municipio.css";
 const menu = [
     { titulo: "Visão geral", href: "/admin-municipio", icone: "bi-grid" },
     { titulo: "Relatos", href: "/admin-municipio/relatos", icone: "bi-file-earmark-text" },
-    { titulo: "Boletins oficiais", href: "/admin-municipio/boletins", icone: "bi-file-earmark-lock" },
     { titulo: "Usuários", href: "/admin-municipio/usuarios", icone: "bi-people" },
     { titulo: "Configurações", href: "/admin-municipio/configuracoes", icone: "bi-gear" },
 ];
