@@ -1,6 +1,10 @@
 
 import { pool } from "../config/database.js";
 
+/* =========================================================
+   LISTAR RELATOS PÚBLICOS DOS CIDADÃOS
+========================================================= */
+
 export async function listarRelatosPublicos(request, response, next) {
     try {
         const pagina = Math.max(
@@ -28,10 +32,7 @@ export async function listarRelatosPublicos(request, response, next) {
 
         if (pesquisa) {
             filtros.push("(c.nome LIKE ? OR m.nome LIKE ?)");
-            parametros.push(
-                `%${pesquisa}%`,
-                `%${pesquisa}%`
-            );
+            parametros.push(`%${pesquisa}%`, `%${pesquisa}%`);
         }
 
         if (categoria) {
@@ -81,15 +82,89 @@ export async function listarRelatosPublicos(request, response, next) {
 
         return response.status(200).json({
             relatos,
-            total: resultado.total,
+            total: Number(resultado.total),
             pagina,
             limite,
             totalPaginas: Math.ceil(
-                resultado.total / limite
+                Number(resultado.total) / limite
             )
         });
 
     } catch (erro) {
+        next(erro);
+    }
+}
+
+/* =========================================================
+   LISTAR OCORRÊNCIAS OFICIAIS INDIVIDUAIS PARA O MAPA
+========================================================= */
+
+export async function listarDadosOficiaisMapa(request, response, next) {
+    try {
+        const limite = Math.min(
+            50000,
+            Math.max(
+                1,
+                Number.parseInt(request.query.limite, 10) || 50000
+            )
+        );
+
+        const [registros] = await pool.query(
+            `SELECT
+                ro.id_ocorrencia,
+                ro.nome_municipio AS municipio,
+                ro.cod_ibge,
+                ro.data_ocorrencia_bo AS data_ocorrencia,
+                ro.bairro,
+                ro.natureza_apurada AS natureza,
+                ro.latitude,
+                ro.longitude
+            FROM registro_oficial ro
+            INNER JOIN importacoes i
+                ON i.id_importacao = ro.fk_id_importacao
+            WHERE ro.ativo = 1
+              AND i.excluida_em IS NULL
+              AND i.situacao = 'CONCLUIDA'
+              AND ro.latitude IS NOT NULL
+              AND ro.longitude IS NOT NULL
+              AND ro.latitude <> 0
+              AND ro.longitude <> 0
+              AND ro.latitude BETWEEN -90 AND 90
+              AND ro.longitude BETWEEN -180 AND 180
+              AND ro.cod_ibge IN (
+                  3548708,
+                  3547809,
+                  3548807,
+                  3513801,
+                  3529401,
+                  3543303,
+                  3544103
+              )
+            ORDER BY
+                ro.data_ocorrencia_bo DESC,
+                ro.id_ocorrencia DESC
+            LIMIT ?`,
+            [limite]
+        );
+
+        const dados = registros.map((registro) => ({
+            ...registro,
+            id_ocorrencia: Number(registro.id_ocorrencia),
+            latitude: Number(registro.latitude),
+            longitude: Number(registro.longitude)
+        }));
+
+        return response.status(200).json({
+            registros: dados,
+            total: dados.length
+        });
+
+    } catch (erro) {
+        console.error(
+            "Erro ao consultar ocorrências oficiais do mapa:",
+            erro
+        );
+
         next(erro);
     }
 }

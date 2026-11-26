@@ -528,3 +528,35 @@
         display: none;
     }
 }
+.mapa-legenda {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    padding-top: 12px;
+    margin-top: 12px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.mapa-legenda > span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.mapa-legenda-ponto {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.mapa-legenda-cidadao {
+    background: #2457c5;
+}
+
+.mapa-legenda-oficial {
+    background: #dc3545;
+}

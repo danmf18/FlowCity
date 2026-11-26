@@ -15,6 +15,8 @@ import {
     rejeitarRelato
 } from "../controllers/adminGeralController.js";
 
+import importacoesRoutes from "./importacoesRoutes.js";
+
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 import { checkRole } from "../middlewares/checkRole.js";
 
@@ -32,11 +34,13 @@ router.get("/relatos", listarRelatos);
 router.get("/relatos/mapa", listarRelatosMapa);
 
 router.get("/configuracoes", obterConfiguracoesConta);
-
 router.put("/configuracoes/dados", atualizarDadosConta);
-
 router.put("/configuracoes/senha", alterarSenhaConta);
+
 router.put("/relatos/:id/aprovar", aprovarRelato);
 router.put("/relatos/:id/rejeitar", rejeitarRelato);
+
+// Importações oficiais — protegidas pelo middleware acima
+router.use("/importacoes", importacoesRoutes);
 
 export default router;

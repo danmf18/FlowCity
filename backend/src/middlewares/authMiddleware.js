@@ -1,4 +1,3 @@
-
 import jwt from "jsonwebtoken";
 import { pool } from "../config/database.js";
 
@@ -16,26 +15,23 @@ export async function authMiddleware(request, response, next) {
 
         if (!token) {
             return response.status(401).json({
-                mensagem: "Token de autenticação inválido."
+                mensagem: "Token de autenticação não informado."
             });
-        }
-
-        if (!process.env.JWT_SECRET) {
-            throw new Error("JWT_SECRET não configurado.");
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        if (
-            !Number.isInteger(Number(decoded.id)) ||
-            Number(decoded.id) <= 0
-        ) {
+        const contaId = Number(
+            decoded.id_conta ?? decoded.id
+        );
+
+        if (!Number.isInteger(contaId) || contaId <= 0) {
             return response.status(401).json({
-                mensagem: "Token de autenticação inválido."
+                mensagem: "Token inválido."
             });
         }
 
-        const [usuarios] = await pool.execute(
+        const [contas] = await pool.execute(
             `SELECT
                 id_conta,
                 nome,
@@ -45,37 +41,43 @@ export async function authMiddleware(request, response, next) {
              FROM contas
              WHERE id_conta = ?
              LIMIT 1`,
-            [Number(decoded.id)]
+            [contaId]
         );
 
-        if (usuarios.length === 0) {
+        if (contas.length === 0) {
             return response.status(401).json({
                 mensagem: "Conta não encontrada."
             });
         }
 
-        const usuario = usuarios[0];
+        const conta = contas[0];
 
         request.usuario = {
-            id: usuario.id_conta,
-            nome: usuario.nome,
-            email: usuario.email,
-            perfil: usuario.perfil,
-            fk_id_municipio: usuario.fk_id_municipio
+            id: conta.id_conta,
+            id_conta: conta.id_conta,
+            nome: conta.nome,
+            email: conta.email,
+            perfil: conta.perfil,
+            fk_id_municipio: conta.fk_id_municipio
+        };
+
+        // Compatibilidade com controllers que utilizam request.user.
+        request.user = {
+            ...request.usuario
         };
 
         next();
 
-    } catch (error) {
+    } catch (erro) {
         if (
-            error.name === "JsonWebTokenError" ||
-            error.name === "TokenExpiredError"
+            erro.name === "JsonWebTokenError" ||
+            erro.name === "TokenExpiredError"
         ) {
             return response.status(401).json({
                 mensagem: "Token inválido ou expirado."
             });
         }
 
-        next(error);
+        next(erro);
     }
 }
