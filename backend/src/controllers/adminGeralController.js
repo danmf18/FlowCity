@@ -204,12 +204,13 @@ export async function criarUsuario(request, response, next) {
 
     let municipioId = null;
 
-    if (perfil === "admin_municipal") {
+    // Cidadãos e administradores municipais precisam estar vinculados a um município.
+    if (perfil === "cidadao" || perfil === "admin_municipal") {
       municipioId = Number(fk_id_municipio);
 
       if (!Number.isInteger(municipioId) || municipioId <= 0) {
         return response.status(400).json({
-          mensagem: "Selecione um município para o administrador municipal.",
+          mensagem: "Selecione um município para este usuário.",
         });
       }
 
@@ -258,6 +259,254 @@ export async function criarUsuario(request, response, next) {
   } catch (error) {
     next(error);
   }
+}
+
+
+export async function atualizarUsuario(request, response, next) {
+    let conexao;
+
+    try {
+        const idUsuario = Number(request.params.id);
+        const idResponsavel = Number(
+            request.usuario.id_conta ?? request.usuario.id
+        );
+
+        if (!Number.isInteger(idResponsavel) || idResponsavel <= 0) {
+            return response.status(401).json({
+                mensagem: "Não foi possível identificar o administrador responsável."
+            });
+        }
+
+        const {
+            nome,
+            email,
+            perfil,
+            fk_id_municipio,
+            senha
+        } = request.body;
+
+        const nomeLimpo = String(nome || "").trim();
+        const emailLimpo = String(email || "").trim().toLowerCase();
+        const senhaLimpa = String(senha || "");
+
+        const perfisPermitidos = [
+            "cidadao",
+            "admin_municipal",
+            "admin_geral"
+        ];
+
+        if (!Number.isInteger(idUsuario) || idUsuario <= 0) {
+            return response.status(400).json({
+                mensagem: "ID do usuário inválido."
+            });
+        }
+
+        if (!nomeLimpo || !emailLimpo || !perfil) {
+            return response.status(400).json({
+                mensagem: "Preencha o nome, e-mail e perfil."
+            });
+        }
+
+        if (nomeLimpo.length > 150) {
+            return response.status(400).json({
+                mensagem: "O nome deve ter no máximo 150 caracteres."
+            });
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpo)) {
+            return response.status(400).json({
+                mensagem: "Informe um e-mail válido."
+            });
+        }
+
+        if (!perfisPermitidos.includes(perfil)) {
+            return response.status(400).json({
+                mensagem: "Perfil informado inválido."
+            });
+        }
+
+        if (senhaLimpa && senhaLimpa.length < 8) {
+            return response.status(400).json({
+                mensagem: "A senha deve ter pelo menos 8 caracteres."
+            });
+        }
+
+        // Não permite alterar o próprio perfil de administrador geral.
+        if (
+            idUsuario === idResponsavel &&
+            perfil !== "admin_geral"
+        ) {
+            return response.status(403).json({
+                mensagem: "Você não pode alterar seu próprio perfil."
+            });
+        }
+
+        let municipioId = null;
+
+        // Cidadãos e administradores municipais precisam estar vinculados a um município.
+        if (perfil === "cidadao" || perfil === "admin_municipal") {
+            municipioId = Number(fk_id_municipio);
+
+            if (!Number.isInteger(municipioId) || municipioId <= 0) {
+                return response.status(400).json({
+                    mensagem: "Selecione um município para este usuário."
+                });
+            }
+        }
+
+        conexao = await pool.getConnection();
+        await conexao.beginTransaction();
+
+        // Verifica se a conta existe.
+        const [usuarios] = await conexao.execute(
+            `SELECT id_conta, nome, email, perfil, fk_id_municipio
+             FROM contas
+             WHERE id_conta = ?
+             FOR UPDATE`,
+            [idUsuario]
+        );
+
+        if (!usuarios.length) {
+            await conexao.rollback();
+
+            return response.status(404).json({
+                mensagem: "Usuário não encontrado."
+            });
+        }
+
+        const usuarioAtual = usuarios[0];
+
+        // Verifica se o e-mail pertence a outra conta.
+        const [emailExistente] = await conexao.execute(
+            `SELECT id_conta
+             FROM contas
+             WHERE email = ? AND id_conta <> ?
+             LIMIT 1`,
+            [emailLimpo, idUsuario]
+        );
+
+        if (emailExistente.length) {
+            await conexao.rollback();
+
+            return response.status(409).json({
+                mensagem: "Este e-mail já está sendo utilizado por outra conta."
+            });
+        }
+
+        // Confere se o município existe.
+        if (municipioId !== null) {
+            const [municipios] = await conexao.execute(
+                `SELECT id_municipio
+                 FROM municipios
+                 WHERE id_municipio = ?`,
+                [municipioId]
+            );
+
+            if (!municipios.length) {
+                await conexao.rollback();
+
+                return response.status(400).json({
+                    mensagem: "O município selecionado não existe."
+                });
+            }
+        }
+
+        const alteracoes = [];
+
+        if (usuarioAtual.nome !== nomeLimpo) {
+            alteracoes.push("Nome alterado");
+        }
+
+        if (usuarioAtual.email !== emailLimpo) {
+            alteracoes.push("E-mail alterado");
+        }
+
+        if (usuarioAtual.perfil !== perfil) {
+            alteracoes.push(
+                `Perfil alterado de ${usuarioAtual.perfil} para ${perfil}`
+            );
+        }
+
+        if (
+            Number(usuarioAtual.fk_id_municipio || 0) !==
+            Number(municipioId || 0)
+        ) {
+            alteracoes.push("Município alterado");
+        }
+
+        const dadosAtualizacao = [
+            nomeLimpo,
+            emailLimpo,
+            perfil,
+            municipioId
+        ];
+
+        let sql = `
+            UPDATE contas
+            SET nome = ?,
+                email = ?,
+                perfil = ?,
+                fk_id_municipio = ?
+        `;
+
+        // Atualiza a senha somente se uma nova senha for informada.
+        if (senhaLimpa) {
+            const senhaHash = await bcrypt.hash(senhaLimpa, 12);
+
+            sql += ", senha_hash = ?";
+            dadosAtualizacao.push(senhaHash);
+
+            alteracoes.push("Senha redefinida");
+        }
+
+        sql += " WHERE id_conta = ?";
+        dadosAtualizacao.push(idUsuario);
+
+        await conexao.execute(sql, dadosAtualizacao);
+
+        // Registra a alteração administrativa.
+        const detalhes = alteracoes.length
+            ? alteracoes.join("; ")
+            : "Dados do usuário revisados, sem alterações.";
+
+        await conexao.execute(
+            `INSERT INTO acoes_administrativas
+                (tipo, detalhes, fk_id_conta_responsavel,
+                 fk_id_conta_afetada, fk_id_importacao)
+             VALUES (?, ?, ?, ?, NULL)`,
+            [
+                "Editar usuário",
+                detalhes,
+                idResponsavel,
+                idUsuario
+            ]
+        );
+
+        await conexao.commit();
+
+        return response.status(200).json({
+            mensagem: "Usuário atualizado com sucesso.",
+            usuario: {
+                id_conta: idUsuario,
+                nome: nomeLimpo,
+                email: emailLimpo,
+                perfil,
+                fk_id_municipio: municipioId
+            }
+        });
+
+    } catch (error) {
+        if (conexao) {
+            await conexao.rollback();
+        }
+
+        next(error);
+
+    } finally {
+        if (conexao) {
+            conexao.release();
+        }
+    }
 }
 
 export async function listarMunicipios(request, response, next) {

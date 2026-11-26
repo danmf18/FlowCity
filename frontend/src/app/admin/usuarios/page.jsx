@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -57,6 +56,13 @@ export default function UsuariosAdmin() {
     const [mensagemCadastro, setMensagemCadastro] = useState("");
     const [erroCadastro, setErroCadastro] = useState("");
     const [novoUsuario, setNovoUsuario] = useState(formularioInicial);
+
+    // Edição de contas
+    const [modalEdicao, setModalEdicao] = useState(false);
+    const [usuarioEditando, setUsuarioEditando] = useState(null);
+    const [dadosEdicao, setDadosEdicao] = useState(formularioInicial);
+    const [erroEdicao, setErroEdicao] = useState("");
+    const [mensagemEdicao, setMensagemEdicao] = useState("");
 
     const carregarUsuarios = useCallback(async () => {
         try {
@@ -145,10 +151,49 @@ export default function UsuariosAdmin() {
         setNovoUsuario((atual) => ({
             ...atual,
             [name]: value,
-            ...(name === "perfil" && value !== "admin_municipal"
+            ...(name === "perfil" && value === "admin_geral"
                 ? { fk_id_municipio: "" }
                 : {})
         }));
+    }
+
+    function alterarCampoEdicao(event) {
+        const { name, value } = event.target;
+
+        setDadosEdicao((atual) => ({
+            ...atual,
+            [name]: value,
+            ...(name === "perfil" && value === "admin_geral"
+                ? { fk_id_municipio: "" }
+                : {})
+        }));
+    }
+
+    async function carregarMunicipios() {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            throw new Error("Faça login novamente.");
+        }
+
+        const resposta = await fetch(
+            `${obterEnderecoAPI()}/admin-geral/municipios`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+            throw new Error(
+                dados.mensagem || "Não foi possível carregar os municípios."
+            );
+        }
+
+        setMunicipios(dados.municipios || []);
     }
 
     async function abrirCadastro() {
@@ -159,30 +204,7 @@ export default function UsuariosAdmin() {
         setCarregandoMunicipios(true);
 
         try {
-            const token = localStorage.getItem("token");
-
-            if (!token) {
-                throw new Error("Faça login novamente.");
-            }
-
-            const resposta = await fetch(
-                `${obterEnderecoAPI()}/admin-geral/municipios`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-            );
-
-            const dados = await resposta.json();
-
-            if (!resposta.ok) {
-                throw new Error(
-                    dados.mensagem || "Não foi possível carregar os municípios."
-                );
-            }
-
-            setMunicipios(dados.municipios || []);
+            await carregarMunicipios();
         } catch (error) {
             setErroCadastro(error.message);
         } finally {
@@ -215,7 +237,7 @@ export default function UsuariosAdmin() {
                     body: JSON.stringify({
                         ...novoUsuario,
                         fk_id_municipio:
-                            novoUsuario.perfil === "admin_municipal"
+                            novoUsuario.perfil !== "admin_geral"
                                 ? Number(novoUsuario.fk_id_municipio)
                                 : null
                     })
@@ -231,17 +253,15 @@ export default function UsuariosAdmin() {
             }
 
             setMensagemCadastro("Conta criada com sucesso!");
-
             setNovoUsuario(formularioInicial);
 
-            // Limpa os filtros para encontrar a nova conta.
             setBusca("");
             setBuscaAplicada("");
             setPerfil("");
             setPagina(1);
 
-            // Aguarda a atualização dos filtros e fecha o modal.
-            // A tabela será atualizada pelo efeito de paginação/filtros.
+            await carregarUsuarios();
+
             window.setTimeout(() => {
                 setModalCadastro(false);
                 setMensagemCadastro("");
@@ -249,6 +269,92 @@ export default function UsuariosAdmin() {
 
         } catch (error) {
             setErroCadastro(error.message);
+        } finally {
+            setSalvando(false);
+        }
+    }
+
+    async function abrirEdicao(usuario) {
+        setErroEdicao("");
+        setMensagemEdicao("");
+        setUsuarioEditando(usuario);
+
+        setDadosEdicao({
+            nome: usuario.nome || "",
+            email: usuario.email || "",
+            senha: "",
+            perfil: usuario.perfil || "cidadao",
+            fk_id_municipio: usuario.fk_id_municipio
+                ? String(usuario.fk_id_municipio)
+                : ""
+        });
+
+        setModalEdicao(true);
+        setCarregandoMunicipios(true);
+
+        try {
+            await carregarMunicipios();
+        } catch (error) {
+            setErroEdicao(error.message);
+        } finally {
+            setCarregandoMunicipios(false);
+        }
+    }
+
+    async function salvarEdicao(event) {
+        event.preventDefault();
+
+        if (!usuarioEditando) return;
+
+        try {
+            setSalvando(true);
+            setErroEdicao("");
+            setMensagemEdicao("");
+
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                throw new Error("Faça login novamente.");
+            }
+
+            const resposta = await fetch(
+                `${obterEnderecoAPI()}/admin-geral/usuarios/${usuarioEditando.id_conta}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        ...dadosEdicao,
+                        fk_id_municipio:
+                            dadosEdicao.perfil !== "admin_geral"
+                                ? Number(dadosEdicao.fk_id_municipio)
+                                : null
+                    })
+                }
+            );
+
+            const dados = await resposta.json();
+
+            if (!resposta.ok) {
+                throw new Error(
+                    dados.mensagem || "Não foi possível atualizar o usuário."
+                );
+            }
+
+            setMensagemEdicao("Usuário atualizado com sucesso!");
+
+            await carregarUsuarios();
+
+            window.setTimeout(() => {
+                setModalEdicao(false);
+                setUsuarioEditando(null);
+                setMensagemEdicao("");
+            }, 1000);
+
+        } catch (error) {
+            setErroEdicao(error.message);
         } finally {
             setSalvando(false);
         }
@@ -414,6 +520,14 @@ export default function UsuariosAdmin() {
                                                         onClick={() => setUsuarioSelecionado(usuario)}
                                                     >
                                                         Visualizar
+                                                    </button>
+
+                                                    <button
+                                                        className="usuario-details-button"
+                                                        onClick={() => abrirEdicao(usuario)}
+                                                        style={{ marginLeft: "8px" }}
+                                                    >
+                                                        Editar
                                                     </button>
                                                 </td>
                                             </tr>
@@ -602,7 +716,7 @@ export default function UsuariosAdmin() {
                                 </select>
                             </label>
 
-                            {novoUsuario.perfil === "admin_municipal" && (
+                            {novoUsuario.perfil !== "admin_geral" && (
                                 <label>
                                     Município
                                     <select
@@ -658,6 +772,150 @@ export default function UsuariosAdmin() {
                                     disabled={salvando || carregandoMunicipios}
                                 >
                                     {salvando ? "Cadastrando..." : "Cadastrar conta"}
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            )}
+
+            {/* Modal de edição */}
+            {modalEdicao && usuarioEditando && (
+                <div
+                    className="usuario-modal-overlay"
+                    onClick={() => !salvando && setModalEdicao(false)}
+                >
+                    <section
+                        className="usuario-modal usuario-cadastro-modal"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <button
+                            className="usuario-modal-close"
+                            onClick={() => !salvando && setModalEdicao(false)}
+                            disabled={salvando}
+                            aria-label="Fechar"
+                        >
+                            ×
+                        </button>
+
+                        <span className="admin-eyebrow">
+                            GERENCIAMENTO DE CONTAS
+                        </span>
+
+                        <h2>Editar usuário</h2>
+
+                        <p>Altere os dados da conta selecionada.</p>
+
+                        <form
+                            onSubmit={salvarEdicao}
+                            className="usuario-cadastro-form"
+                        >
+                            <label>
+                                Nome completo
+                                <input
+                                    type="text"
+                                    name="nome"
+                                    value={dadosEdicao.nome}
+                                    onChange={alterarCampoEdicao}
+                                    maxLength={150}
+                                    required
+                                />
+                            </label>
+
+                            <label>
+                                E-mail
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={dadosEdicao.email}
+                                    onChange={alterarCampoEdicao}
+                                    maxLength={255}
+                                    required
+                                />
+                            </label>
+
+                            <label>
+                                Nova senha
+                                <input
+                                    type="password"
+                                    name="senha"
+                                    value={dadosEdicao.senha}
+                                    onChange={alterarCampoEdicao}
+                                    placeholder="Deixe vazio para manter a senha atual"
+                                    minLength={8}
+                                />
+                            </label>
+
+                            <label>
+                                Perfil da conta
+                                <select
+                                    name="perfil"
+                                    value={dadosEdicao.perfil}
+                                    onChange={alterarCampoEdicao}
+                                    required
+                                >
+                                    <option value="cidadao">Cidadão</option>
+                                    <option value="admin_municipal">Admin Municipal</option>
+                                    <option value="admin_geral">Admin Geral</option>
+                                </select>
+                            </label>
+
+                            {dadosEdicao.perfil !== "admin_geral" && (
+                                <label>
+                                    Município
+                                    <select
+                                        name="fk_id_municipio"
+                                        value={dadosEdicao.fk_id_municipio}
+                                        onChange={alterarCampoEdicao}
+                                        required
+                                        disabled={carregandoMunicipios}
+                                    >
+                                        <option value="">
+                                            {carregandoMunicipios
+                                                ? "Carregando municípios..."
+                                                : "Selecione um município"}
+                                        </option>
+
+                                        {municipios.map((municipio) => (
+                                            <option
+                                                key={municipio.id_municipio}
+                                                value={municipio.id_municipio}
+                                            >
+                                                {municipio.nome}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                            )}
+
+                            {erroEdicao && (
+                                <div className="usuarios-error">
+                                    {erroEdicao}
+                                </div>
+                            )}
+
+                            {mensagemEdicao && (
+                                <div className="usuarios-success">
+                                    {mensagemEdicao}
+                                </div>
+                            )}
+
+                            <div className="usuario-cadastro-actions">
+                                <button
+                                    type="button"
+                                    className="usuarios-clear-button"
+                                    onClick={() => setModalEdicao(false)}
+                                    disabled={salvando}
+                                >
+                                    Cancelar
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    className="usuarios-add-button"
+                                    disabled={salvando || carregandoMunicipios}
+                                >
+                                    {salvando ? "Salvando..." : "Salvar alterações"}
                                 </button>
                             </div>
                         </form>

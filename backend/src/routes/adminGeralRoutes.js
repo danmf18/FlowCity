@@ -4,6 +4,7 @@ import {
     obterDashboard,
     listarUsuarios,
     criarUsuario,
+    atualizarUsuario,
     listarMunicipios,
     listarRelatos,
     listarRelatosMapa,
@@ -22,9 +23,9 @@ const router = Router();
 router.use(authMiddleware, checkRole("admin_geral"));
 
 router.get("/dashboard", obterDashboard);
-
 router.get("/usuarios", listarUsuarios);
 router.post("/usuarios", criarUsuario);
+router.put("/usuarios/:id", atualizarUsuario);
 router.get("/municipios", listarMunicipios);
 
 router.get("/relatos", listarRelatos);
