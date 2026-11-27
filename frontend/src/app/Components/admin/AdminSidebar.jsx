@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 const paginas = [
   { nome: "Visão geral", caminho: "/admin", icone: "⌂" },
   { nome: "Relatos", caminho: "/admin/relatos", icone: "▤" },
-  { nome: "Importações Oficiais", caminho: "/admin/importacoes-oficiais", icone: "⇧" },
+  { nome: "Importações Oficiais", caminho: "/admin/importacoes", icone: "⇧" },
   { nome: "Usuários", caminho: "/admin/usuarios", icone: "♙" },
   { nome: "Configurações", caminho: "/admin/configuracoes", icone: "⚙" },
 ];
