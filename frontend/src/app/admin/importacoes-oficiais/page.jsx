@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -85,6 +84,43 @@ export default function ImportacoesOficiaisPage() {
     return "SSP-SP";
   }
 
+  function normalizarNomeArquivo(nome) {
+    return String(nome || "")
+      .trim()
+      .toLowerCase();
+  }
+
+  const contagemArquivosAtivos = importacoes.reduce(
+    (acumulador, item) => {
+      if (item.excluida_em) {
+        return acumulador;
+      }
+
+      const chave = normalizarNomeArquivo(item.nome_arquivo);
+
+      if (!chave) {
+        return acumulador;
+      }
+
+      acumulador[chave] = (acumulador[chave] || 0) + 1;
+      return acumulador;
+    },
+    {}
+  );
+
+  function obterOcorrenciasArquivo(item) {
+    if (!item || item.excluida_em) {
+      return 0;
+    }
+
+    const chave = normalizarNomeArquivo(item.nome_arquivo);
+    return contagemArquivosAtivos[chave] || 0;
+  }
+
+  function ehArquivoDuplicado(item) {
+    return obterOcorrenciasArquivo(item) > 1;
+  }
+
   function formatarData(data) {
     if (!data) return "—";
 
@@ -160,6 +196,10 @@ export default function ImportacoesOficiaisPage() {
       return fonte === "SSP-SP" && !item.excluida_em;
     }
 
+    if (aba === "duplicados") {
+      return ehArquivoDuplicado(item);
+    }
+
     if (aba === "lixeira") {
       return Boolean(item.excluida_em);
     }
@@ -182,6 +222,28 @@ export default function ImportacoesOficiaisPage() {
         Number(anoCenso) > 2100)
     ) {
       setErro("Informe um ano válido para o Censo.");
+      return;
+    }
+
+    const chaveArquivo = normalizarNomeArquivo(arquivo.name);
+    const arquivoJaImportado = Boolean(
+      contagemArquivosAtivos[chaveArquivo]
+    );
+
+    if (
+      arquivoJaImportado &&
+      !window.confirm(
+        `Já existe uma importação ativa com o arquivo "${arquivo.name}". Deseja importar mesmo assim?`
+      )
+    ) {
+      if (arquivoIBGERef.current) {
+        arquivoIBGERef.current.value = "";
+      }
+
+      if (arquivoSSPRef.current) {
+        arquivoSSPRef.current.value = "";
+      }
+
       return;
     }
 
@@ -331,6 +393,10 @@ export default function ImportacoesOficiaisPage() {
     (item) => obterFonte(item) === "SSP-SP"
   ).length;
 
+  const totalDuplicados = importacoes.filter((item) =>
+    ehArquivoDuplicado(item)
+  ).length;
+
   const totalLixeira = importacoes.filter(
     (item) => Boolean(item.excluida_em)
   ).length;
@@ -341,6 +407,9 @@ export default function ImportacoesOficiaisPage() {
 
   // Os indicadores de processamento vêm do backend.
   const resumo = detalhes?.resumoItens || {};
+  const ocorrenciasDetalhe = obterOcorrenciasArquivo(
+    detalhes?.importacao
+  );
 
   function formatarNumero(valor) {
     return Number(valor || 0).toLocaleString("pt-BR");
@@ -414,6 +483,12 @@ export default function ImportacoesOficiaisPage() {
           <span>Dados da SSP-SP</span>
           <strong>{formatarNumero(totalSSP)}</strong>
           <small>Importações de ocorrências</small>
+        </article>
+
+        <article className="importacao-indicador">
+          <span>Arquivos duplicados</span>
+          <strong>{formatarNumero(totalDuplicados)}</strong>
+          <small>Importações com mesmo nome</small>
         </article>
 
         <article className="importacao-indicador">
@@ -573,6 +648,14 @@ export default function ImportacoesOficiaisPage() {
 
           <button
             type="button"
+            className={aba === "duplicados" ? "ativa" : ""}
+            onClick={() => setAba("duplicados")}
+          >
+            Duplicados ({totalDuplicados})
+          </button>
+
+          <button
+            type="button"
             className={aba === "lixeira" ? "ativa" : ""}
             onClick={() => setAba("lixeira")}
           >
@@ -608,6 +691,7 @@ export default function ImportacoesOficiaisPage() {
                   <th>Fonte</th>
                   <th>Enviado em</th>
                   <th>Período</th>
+                  <th>Duplicado</th>
                   <th>Situação</th>
                   <th>Ações</th>
                 </tr>
@@ -616,6 +700,8 @@ export default function ImportacoesOficiaisPage() {
               <tbody>
                 {importacoesFiltradas.map((item) => {
                   const naLixeira = Boolean(item.excluida_em);
+                  const ocorrencias = obterOcorrenciasArquivo(item);
+                  const duplicado = ocorrencias > 1;
 
                   return (
                     <tr key={item.id_importacao}>
@@ -628,6 +714,14 @@ export default function ImportacoesOficiaisPage() {
                       </td>
 
                       <td>{formatarPeriodo(item)}</td>
+
+                      <td>
+                        {naLixeira
+                          ? "—"
+                          : duplicado
+                            ? `Sim (${ocorrencias}x)`
+                            : "Não"}
+                      </td>
 
                       <td>
                         <span
@@ -799,6 +893,15 @@ export default function ImportacoesOficiaisPage() {
             <p>
               <strong>Arquivo:</strong>{" "}
               {detalhes.importacao?.nome_arquivo || "Não informado"}
+            </p>
+
+            <p>
+              <strong>Arquivo duplicado:</strong>{" "}
+              {detalhes.importacao?.excluida_em
+                ? "Na lixeira"
+                : ocorrenciasDetalhe > 1
+                  ? `Sim (${ocorrenciasDetalhe} importações ativas com este nome)`
+                  : "Não"}
             </p>
 
             <p>
