@@ -76,9 +76,7 @@ export default function ImportacoesOficiaisPage() {
   }, [carregarImportacoes]);
 
   function obterFonte(item) {
-    const nome = String(
-      item.fonte_nome || ""
-    ).toLowerCase();
+    const nome = String(item.fonte_nome || "").toLowerCase();
 
     if (nome.includes("ibge") || nome.includes("censo")) {
       return "IBGE";
@@ -198,19 +196,13 @@ export default function ImportacoesOficiaisPage() {
       formulario.append("tipo", tipo);
 
       if (tipo === "censo") {
-        formulario.append(
-          "ano_censo",
-          String(anoCenso)
-        );
+        formulario.append("ano_censo", String(anoCenso));
       }
 
-      const resultado = await requisicao(
-        IMPORTACOES_URL,
-        {
-          method: "POST",
-          body: formulario,
-        }
-      );
+      const resultado = await requisicao(IMPORTACOES_URL, {
+        method: "POST",
+        body: formulario,
+      });
 
       setMensagem(
         resultado.message ||
@@ -252,10 +244,7 @@ export default function ImportacoesOficiaisPage() {
   }
 
   async function executarAcao(id, acao, confirmacao) {
-    if (
-      confirmacao &&
-      !window.confirm(confirmacao)
-    ) {
+    if (confirmacao && !window.confirm(confirmacao)) {
       return;
     }
 
@@ -277,18 +266,14 @@ export default function ImportacoesOficiaisPage() {
         url += `/${acao}`;
       }
 
-      const resultado = await requisicao(url, {
-        method,
-      });
+      const resultado = await requisicao(url, { method });
 
       setMensagem(
         resultado.message ||
           "Operação realizada com sucesso."
       );
 
-      if (
-        detalhes?.importacao?.id_importacao === id
-      ) {
+      if (detalhes?.importacao?.id_importacao === id) {
         setDetalhes(null);
       }
 
@@ -312,9 +297,7 @@ export default function ImportacoesOficiaisPage() {
       );
 
       if (!resposta.ok) {
-        const dados = await resposta
-          .json()
-          .catch(() => ({}));
+        const dados = await resposta.json().catch(() => ({}));
 
         throw new Error(
           dados.error ||
@@ -340,46 +323,6 @@ export default function ImportacoesOficiaisPage() {
     }
   }
 
-  function obterResumoItens(itens = []) {
-    const resumo = {
-      total: itens.length,
-      importados: 0,
-      ignorados: 0,
-      erros: 0,
-      outros: 0,
-    };
-
-    itens.forEach((item) => {
-      const resultado = String(item.resultado || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase();
-
-      if (
-        resultado.includes("erro") ||
-        resultado.includes("falha") ||
-        resultado.includes("rejeitad")
-      ) {
-        resumo.erros++;
-      } else if (
-        resultado.includes("ignorad") ||
-        resultado.includes("pulado")
-      ) {
-        resumo.ignorados++;
-      } else if (
-        resultado.includes("importad") ||
-        resultado.includes("inserid") ||
-        resultado.includes("sucesso")
-      ) {
-        resumo.importados++;
-      } else {
-        resumo.outros++;
-      }
-    });
-
-    return resumo;
-  }
-
   const totalIBGE = importacoes.filter(
     (item) => obterFonte(item) === "IBGE"
   ).length;
@@ -395,6 +338,13 @@ export default function ImportacoesOficiaisPage() {
   const totalAtivas = importacoes.filter(
     (item) => !item.excluida_em
   ).length;
+
+  // Os indicadores de processamento vêm do backend.
+  const resumo = detalhes?.resumoItens || {};
+
+  function formatarNumero(valor) {
+    return Number(valor || 0).toLocaleString("pt-BR");
+  }
 
   return (
     <main className="importacoes-page">
@@ -445,30 +395,30 @@ export default function ImportacoesOficiaisPage() {
         </div>
       )}
 
-      {/* INDICADORES */}
+      {/* INDICADORES GERAIS */}
 
       <section className="importacoes-indicadores">
         <article className="importacao-indicador">
           <span>Total de importações</span>
-          <strong>{importacoes.length}</strong>
+          <strong>{formatarNumero(importacoes.length)}</strong>
           <small>Arquivos registrados</small>
         </article>
 
         <article className="importacao-indicador">
           <span>Dados do IBGE</span>
-          <strong>{totalIBGE}</strong>
+          <strong>{formatarNumero(totalIBGE)}</strong>
           <small>Importações do Censo</small>
         </article>
 
         <article className="importacao-indicador">
           <span>Dados da SSP-SP</span>
-          <strong>{totalSSP}</strong>
+          <strong>{formatarNumero(totalSSP)}</strong>
           <small>Importações de ocorrências</small>
         </article>
 
         <article className="importacao-indicador">
           <span>Na lixeira</span>
-          <strong>{totalLixeira}</strong>
+          <strong>{formatarNumero(totalLixeira)}</strong>
           <small>Importações excluídas</small>
         </article>
       </section>
@@ -590,9 +540,7 @@ export default function ImportacoesOficiaisPage() {
             onClick={carregarImportacoes}
             disabled={carregando}
           >
-            {carregando
-              ? "Atualizando..."
-              : "Atualizar"}
+            {carregando ? "Atualizando..." : "Atualizar"}
           </button>
         </div>
 
@@ -632,13 +580,11 @@ export default function ImportacoesOficiaisPage() {
           </button>
         </nav>
 
-        {/* CARREGAMENTO */}
+        {/* CARREGAMENTO E TABELA */}
 
         {carregando ? (
           <div className="importacoes-vazio">
-            <strong>
-              Carregando importações...
-            </strong>
+            <strong>Carregando importações...</strong>
           </div>
         ) : importacoesFiltradas.length === 0 ? (
           <div className="importacoes-vazio">
@@ -669,9 +615,7 @@ export default function ImportacoesOficiaisPage() {
 
               <tbody>
                 {importacoesFiltradas.map((item) => {
-                  const naLixeira = Boolean(
-                    item.excluida_em
-                  );
+                  const naLixeira = Boolean(item.excluida_em);
 
                   return (
                     <tr key={item.id_importacao}>
@@ -700,17 +644,13 @@ export default function ImportacoesOficiaisPage() {
                           <button
                             type="button"
                             onClick={() =>
-                              abrirDetalhes(
-                                item.id_importacao
-                              )
+                              abrirDetalhes(item.id_importacao)
                             }
                           >
                             Detalhes
                           </button>
 
-                          {Boolean(
-                            Number(item.tem_arquivo)
-                          ) && (
+                          {Boolean(Number(item.tem_arquivo)) && (
                             <button
                               type="button"
                               onClick={() =>
@@ -754,8 +694,7 @@ export default function ImportacoesOficiaisPage() {
                             </>
                           ) : (
                             <>
-                              {item.situacao !==
-                                "CONCLUIDA" && (
+                              {item.situacao !== "CONCLUIDA" && (
                                 <button
                                   type="button"
                                   onClick={() =>
@@ -844,60 +783,47 @@ export default function ImportacoesOficiaisPage() {
           <div className="importacoes-detalhes-resumo">
             <p>
               <strong>Fonte:</strong>{" "}
-              {detalhes.importacao?.fonte_nome ||
-                "Não informada"}
+              {detalhes.importacao?.fonte_nome || "Não informada"}
             </p>
 
             <p>
               <strong>Situação:</strong>{" "}
-              {detalhes.importacao?.situacao ||
-                "Não informada"}
+              {detalhes.importacao?.situacao || "Não informada"}
             </p>
 
             <p>
               <strong>Responsável:</strong>{" "}
-              {detalhes.importacao?.responsavel_nome ||
-                "Não informado"}
+              {detalhes.importacao?.responsavel_nome || "Não informado"}
             </p>
 
             <p>
               <strong>Arquivo:</strong>{" "}
-              {detalhes.importacao?.nome_arquivo ||
-                "Não informado"}
+              {detalhes.importacao?.nome_arquivo || "Não informado"}
             </p>
 
             <p>
               <strong>Período dos dados:</strong>{" "}
-              {formatarPeriodo(
-                detalhes.importacao || {}
-              )}
+              {formatarPeriodo(detalhes.importacao || {})}
             </p>
 
             <p>
               <strong>Data da importação:</strong>{" "}
-              {formatarData(
-                detalhes.importacao?.enviada_em
-              )}
+              {formatarData(detalhes.importacao?.enviada_em)}
             </p>
 
             <p>
               <strong>Início do processamento:</strong>{" "}
-              {formatarData(
-                detalhes.importacao?.iniciada_em
-              )}
+              {formatarData(detalhes.importacao?.iniciada_em)}
             </p>
 
             <p>
               <strong>Conclusão:</strong>{" "}
-              {formatarData(
-                detalhes.importacao?.concluida_em
-              )}
+              {formatarData(detalhes.importacao?.concluida_em)}
             </p>
 
             <p>
               <strong>Resumo:</strong>{" "}
-              {detalhes.importacao?.resumo_resultado ||
-                "Não informado"}
+              {detalhes.importacao?.resumo_resultado || "Não informado"}
             </p>
 
             <p>
@@ -906,46 +832,46 @@ export default function ImportacoesOficiaisPage() {
             </p>
           </div>
 
-          {/* INDICADORES DOS ITENS */}
+          {/* INDICADORES VINDOS DO BACKEND */}
 
-          {(() => {
-            const resumo = obterResumoItens(
-              detalhes.itens || []
-            );
+          <h3>Resumo do processamento</h3>
 
-            return (
-              <>
-                <h3>Resumo do processamento</h3>
+          <div className="importacoes-resumo-metricas">
+            <article className="importacoes-resumo-metrica">
+              <span>Itens processados</span>
+              <strong>
+                {formatarNumero(resumo.total_processados)}
+              </strong>
+            </article>
 
-                <div className="importacoes-resumo-metricas">
-                  <article className="importacoes-resumo-metrica">
-                    <span>Itens processados</span>
-                    <strong>{resumo.total}</strong>
-                  </article>
+            <article className="importacoes-resumo-metrica importados">
+              <span>Importados</span>
+              <strong>
+                {formatarNumero(resumo.importados)}
+              </strong>
+            </article>
 
-                  <article className="importacoes-resumo-metrica importados">
-                    <span>Importados</span>
-                    <strong>{resumo.importados}</strong>
-                  </article>
+            <article className="importacoes-resumo-metrica ignorados">
+              <span>Ignorados</span>
+              <strong>
+                {formatarNumero(resumo.ignorados)}
+              </strong>
+            </article>
 
-                  <article className="importacoes-resumo-metrica ignorados">
-                    <span>Ignorados</span>
-                    <strong>{resumo.ignorados}</strong>
-                  </article>
+            <article className="importacoes-resumo-metrica erros">
+              <span>Com erro</span>
+              <strong>
+                {formatarNumero(resumo.erros)}
+              </strong>
+            </article>
 
-                  <article className="importacoes-resumo-metrica erros">
-                    <span>Com erro</span>
-                    <strong>{resumo.erros}</strong>
-                  </article>
-
-                  <article className="importacoes-resumo-metrica">
-                    <span>Outros resultados</span>
-                    <strong>{resumo.outros}</strong>
-                  </article>
-                </div>
-              </>
-            );
-          })()}
+            <article className="importacoes-resumo-metrica">
+              <span>Outros resultados</span>
+              <strong>
+                {formatarNumero(resumo.outros)}
+              </strong>
+            </article>
+          </div>
 
           {/* ITENS PROCESSADOS */}
 
@@ -969,13 +895,9 @@ export default function ImportacoesOficiaisPage() {
                     <tr key={item.id_item_importacao}>
                       <td>{item.numero_linha}</td>
 
-                      <td>
-                        {item.nome_aba || "—"}
-                      </td>
+                      <td>{item.nome_aba || "—"}</td>
 
-                      <td>
-                        {item.municipio_informado || "—"}
-                      </td>
+                      <td>{item.municipio_informado || "—"}</td>
 
                       <td>{item.resultado}</td>
 
@@ -989,13 +911,55 @@ export default function ImportacoesOficiaisPage() {
             <p>Nenhum item encontrado.</p>
           )}
 
+          <p className="importacoes-itens-observacao">
+            A tabela apresenta os 50 itens mais recentes.
+            Os indicadores acima consideram todos os itens registrados
+            para esta importação.
+          </p>
+
+          {/* AMOSTRA DO CENSO */}
+
+          {detalhes.amostraCenso?.length > 0 && (
+            <>
+              <h3>Amostra dos dados do Censo</h3>
+
+              <div className="importacoes-tabela">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Ano</th>
+                      <th>Nível territorial</th>
+                      <th>Código IBGE</th>
+                      <th>Município</th>
+                      <th>Bairro</th>
+                      <th>População</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {detalhes.amostraCenso.map((item) => (
+                      <tr key={item.id_censo}>
+                        <td>{item.ano_censo}</td>
+                        <td>{item.nivel_territorial}</td>
+                        <td>{item.cod_ibge}</td>
+                        <td>{item.nome_municipio}</td>
+                        <td>{item.bairro || "—"}</td>
+                        <td>
+                          {formatarNumero(item.populacao)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
           {/* AÇÕES ADMINISTRATIVAS */}
 
           {detalhes.acoes?.length > 0 && (
             <>
-              <h3>
-                Histórico de ações administrativas
-              </h3>
+              <h3>Histórico de ações administrativas</h3>
 
               <div className="importacoes-acoes-historico">
                 {detalhes.acoes.map((acao) => (
@@ -1007,13 +971,11 @@ export default function ImportacoesOficiaisPage() {
 
                     <p>
                       Responsável:{" "}
-                      {acao.responsavel_nome ||
-                        "Não informado"}
+                      {acao.responsavel_nome || "Não informado"}
                     </p>
 
                     <p>
-                      Data:{" "}
-                      {formatarData(acao.realizada_em)}
+                      Data: {formatarData(acao.realizada_em)}
                     </p>
 
                     {acao.detalhes && (
