@@ -1,4 +1,3 @@
-
 import fs from "node:fs/promises";
 
 import {
@@ -308,7 +307,6 @@ export const obterImportacaoPorId = async (req, res) => {
       [contagemDestino],
       [contagemErros],
     ] = await Promise.all([
-
       // 50 itens mais recentes para a tabela.
       alertabcPool.query(
         `SELECT
@@ -466,13 +464,9 @@ export const obterImportacaoPorId = async (req, res) => {
 
     return res.json({
       importacao,
-
       itens,
-
       acoes,
-
       amostraCenso,
-
       resumoItens: {
         total_processados: totalProcessados,
         importados,
@@ -480,7 +474,6 @@ export const obterImportacaoPorId = async (req, res) => {
         erros,
         outros,
       },
-
       totaisDestino: {
         registros_criminais: registrosCriminais,
         registros_censo: registrosCenso,
@@ -951,7 +944,7 @@ export const excluirPermanentemente = async (req, res) => {
   let caminhoArquivo = null;
 
   try {
-    const contaAcao = obterContaId(req);
+    obterContaId(req);
 
     await garantirEstruturaImportacoes();
 
@@ -1011,9 +1004,7 @@ export const excluirPermanentemente = async (req, res) => {
     );
 
     await conn.query(
-      `UPDATE acoes_administrativas
-
-       SET fk_id_importacao = NULL
+      `DELETE FROM acoes_administrativas
 
        WHERE fk_id_importacao = ?`,
       [id]
@@ -1029,24 +1020,6 @@ export const excluirPermanentemente = async (req, res) => {
     if (ehCenso) {
       await recalcularPopulacaoRegistros(conn);
     }
-
-    await conn.query(
-      `INSERT INTO acoes_administrativas
-        (
-          tipo,
-          detalhes,
-          fk_id_conta_responsavel,
-          fk_id_conta_afetada,
-          fk_id_importacao
-        )
-
-       VALUES (?, ?, ?, NULL, NULL)`,
-      [
-        "EXCLUSAO_PERMANENTE_IMPORTACAO",
-        `Importação #${id} (${atual.nome_arquivo}) removida permanentemente.`,
-        contaAcao,
-      ]
-    );
 
     await conn.commit();
 
