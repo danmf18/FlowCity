@@ -63,6 +63,31 @@ async function verificarFonteCenso(conn, idFonte) {
     .includes("censo");
 }
 
+/*
+|--------------------------------------------------------------------------
+| EXTRAIR TOTAIS DO RESUMO DA IMPORTAÇÃO
+|--------------------------------------------------------------------------
+*/
+
+function extrairNumeroResumo(texto, campo) {
+  if (!texto) return null;
+
+  const regex = new RegExp(
+    `${campo}\\s*:\\s*([\\d.]+)`,
+    "i"
+  );
+
+  const resultado = String(texto).match(regex);
+
+  if (!resultado) return null;
+
+  const numero = Number(
+    resultado[1].replace(/\./g, "")
+  );
+
+  return Number.isFinite(numero) ? numero : null;
+}
+
 /* METADADOS */
 
 export const obterMetadados = async (req, res) => {
@@ -75,11 +100,13 @@ export const obterMetadados = async (req, res) => {
          FROM contas
          ORDER BY nome ASC`
       ),
+
       alertabcPool.query(
         `SELECT id_fonte, nome
          FROM fontes
          ORDER BY id_fonte ASC`
       ),
+
       alertabcPool.query(
         `SELECT id_municipio, nome, codigo_ibge
          FROM municipios
@@ -87,9 +114,17 @@ export const obterMetadados = async (req, res) => {
       ),
     ]);
 
-    return res.json({ contas, fontes, municipios });
+    return res.json({
+      contas,
+      fontes,
+      municipios,
+    });
   } catch (error) {
-    return enviarErro(res, error, "Erro ao carregar metadados de importação.");
+    return enviarErro(
+      res,
+      error,
+      "Erro ao carregar metadados de importação."
+    );
   }
 };
 
@@ -100,6 +135,7 @@ export const listarImportacoes = async (req, res) => {
     await garantirEstruturaImportacoes();
 
     const { fonte, situacao, lixeira } = req.query;
+
     const condicoes = ["1 = 1"];
     const params = [];
 
@@ -113,7 +149,9 @@ export const listarImportacoes = async (req, res) => {
       const fonteId = parseId(fonte);
 
       if (!fonteId) {
-        return res.status(400).json({ error: "ID da fonte inválido." });
+        return res.status(400).json({
+          error: "ID da fonte inválido.",
+        });
       }
 
       condicoes.push("i.fk_id_fonte = ?");
@@ -129,57 +167,83 @@ export const listarImportacoes = async (req, res) => {
       `SELECT
         i.id_importacao,
         i.nome_arquivo,
+
         CASE
           WHEN i.caminho_arquivo IS NOT NULL
-          AND i.caminho_arquivo <> ''
-          THEN 1 ELSE 0
+            AND i.caminho_arquivo <> ''
+          THEN 1
+          ELSE 0
         END AS tem_arquivo,
+
         i.pagina_origem,
-        DATE_FORMAT(i.inicio_periodo, '%Y-%m-%d') AS inicio_periodo,
-        DATE_FORMAT(i.fim_periodo, '%Y-%m-%d') AS fim_periodo,
+
+        DATE_FORMAT(
+          i.inicio_periodo,
+          '%Y-%m-%d'
+        ) AS inicio_periodo,
+
+        DATE_FORMAT(
+          i.fim_periodo,
+          '%Y-%m-%d'
+        ) AS fim_periodo,
+
         i.enviada_em,
         i.excluida_em,
         i.situacao,
         i.resumo_resultado,
         i.fk_id_conta_responsavel,
         i.fk_id_fonte,
+
         c.nome AS responsavel_nome,
         c.email AS responsavel_email,
         f.nome AS fonte_nome,
+
         (
           SELECT COUNT(*)
           FROM registro_oficial r
           WHERE r.fk_id_importacao = i.id_importacao
         ) AS total_registros_criminais,
+
         (
           SELECT COUNT(*)
           FROM censo_demografico cd
           WHERE cd.fk_id_importacao = i.id_importacao
         ) AS total_registros_censo
+
       FROM importacoes i
+
       JOIN contas c
         ON c.id_conta = i.fk_id_conta_responsavel
+
       JOIN fontes f
         ON f.id_fonte = i.fk_id_fonte
+
       WHERE ${condicoes.join(" AND ")}
+
       ORDER BY i.id_importacao DESC`,
       params
     );
 
     return res.json(rows);
   } catch (error) {
-    return enviarErro(res, error, "Erro ao listar importações.");
+    return enviarErro(
+      res,
+      error,
+      "Erro ao listar importações."
+    );
   }
 };
 
-/* DETALHES */
+/* DETALHES DA IMPORTAÇÃO */
 
 export const obterImportacaoPorId = async (req, res) => {
   try {
     const id = parseId(req.params.id);
 
     if (!id) {
-      return res.status(400).json({ error: "ID de importação inválido." });
+      return res.status(400).json({
+        error: "ID de importação inválido.",
+      });
     }
 
     await garantirEstruturaImportacoes();
@@ -188,37 +252,64 @@ export const obterImportacaoPorId = async (req, res) => {
       `SELECT
         i.id_importacao,
         i.nome_arquivo,
+
         CASE
           WHEN i.caminho_arquivo IS NOT NULL
-          AND i.caminho_arquivo <> ''
-          THEN 1 ELSE 0
+            AND i.caminho_arquivo <> ''
+          THEN 1
+          ELSE 0
         END AS tem_arquivo,
+
         i.pagina_origem,
-        DATE_FORMAT(i.inicio_periodo, '%Y-%m-%d') AS inicio_periodo,
-        DATE_FORMAT(i.fim_periodo, '%Y-%m-%d') AS fim_periodo,
+
+        DATE_FORMAT(
+          i.inicio_periodo,
+          '%Y-%m-%d'
+        ) AS inicio_periodo,
+
+        DATE_FORMAT(
+          i.fim_periodo,
+          '%Y-%m-%d'
+        ) AS fim_periodo,
+
         i.enviada_em,
         i.excluida_em,
         i.situacao,
         i.resumo_resultado,
         i.fk_id_conta_responsavel,
         i.fk_id_fonte,
+
         c.nome AS responsavel_nome,
         c.email AS responsavel_email,
         f.nome AS fonte_nome
+
       FROM importacoes i
+
       JOIN contas c
         ON c.id_conta = i.fk_id_conta_responsavel
+
       JOIN fontes f
         ON f.id_fonte = i.fk_id_fonte
+
       WHERE i.id_importacao = ?`,
       [id]
     );
 
     if (!importacao) {
-      return res.status(404).json({ error: "Importação não encontrada." });
+      return res.status(404).json({
+        error: "Importação não encontrada.",
+      });
     }
 
-    const [[itens], [acoes], [amostraCenso]] = await Promise.all([
+    const [
+      [itens],
+      [acoes],
+      [amostraCenso],
+      [contagemDestino],
+      [contagemErros],
+    ] = await Promise.all([
+
+      // 50 itens mais recentes para a tabela.
       alertabcPool.query(
         `SELECT
           id_item_importacao,
@@ -228,12 +319,18 @@ export const obterImportacaoPorId = async (req, res) => {
           municipio_informado,
           nome_aba,
           dados_recebidos
+
         FROM item_importacao
+
         WHERE fk_id_importacao = ?
+
         ORDER BY id_item_importacao DESC
+
         LIMIT 50`,
         [id]
       ),
+
+      // Histórico de ações administrativas.
       alertabcPool.query(
         `SELECT
           a.id_acao,
@@ -241,13 +338,19 @@ export const obterImportacaoPorId = async (req, res) => {
           a.realizada_em,
           a.detalhes,
           c.nome AS responsavel_nome
+
         FROM acoes_administrativas a
+
         JOIN contas c
           ON c.id_conta = a.fk_id_conta_responsavel
+
         WHERE a.fk_id_importacao = ?
+
         ORDER BY a.realizada_em DESC`,
         [id]
       ),
+
+      // Amostra dos dados do Censo.
       alertabcPool.query(
         `SELECT
           id_censo,
@@ -257,17 +360,138 @@ export const obterImportacaoPorId = async (req, res) => {
           nome_municipio,
           bairro,
           populacao
+
         FROM censo_demografico
+
         WHERE fk_id_importacao = ?
-        ORDER BY nivel_territorial DESC, nome_municipio ASC, bairro ASC
+
+        ORDER BY
+          nivel_territorial DESC,
+          nome_municipio ASC,
+          bairro ASC
+
         LIMIT 50`,
+        [id]
+      ),
+
+      // Total de registros gravados nas tabelas de destino.
+      // Não usa LIMIT e não filtra apenas registros ativos.
+      alertabcPool.query(
+        `SELECT
+
+          (
+            SELECT COUNT(*)
+            FROM registro_oficial
+            WHERE fk_id_importacao = ?
+          ) AS total_registros_criminais,
+
+          (
+            SELECT COUNT(*)
+            FROM censo_demografico
+            WHERE fk_id_importacao = ?
+          ) AS total_registros_censo`,
+        [id, id]
+      ),
+
+      // Erros registrados individualmente.
+      alertabcPool.query(
+        `SELECT
+          COUNT(*) AS total_erros
+
+        FROM item_importacao
+
+        WHERE fk_id_importacao = ?
+
+          AND (
+            LOWER(COALESCE(resultado, '')) LIKE '%erro%'
+            OR LOWER(COALESCE(resultado, '')) LIKE '%falha%'
+            OR LOWER(COALESCE(resultado, '')) LIKE '%rejeitad%'
+          )`,
         [id]
       ),
     ]);
 
-    return res.json({ importacao, itens, acoes, amostraCenso });
+    /*
+    |--------------------------------------------------------------------------
+    | CALCULAR INDICADORES REAIS
+    |--------------------------------------------------------------------------
+    */
+
+    const registrosCriminais = Number(
+      contagemDestino[0]?.total_registros_criminais || 0
+    );
+
+    const registrosCenso = Number(
+      contagemDestino[0]?.total_registros_censo || 0
+    );
+
+    // Total importado: registros efetivamente gravados.
+    const importados =
+      registrosCriminais + registrosCenso;
+
+    // Total de linhas lidas pelo ETL.
+    const totalLidas = extrairNumeroResumo(
+      importacao.resumo_resultado,
+      "Linhas lidas"
+    );
+
+    // Total de linhas ignoradas pelo ETL.
+    const ignoradosResumo = extrairNumeroResumo(
+      importacao.resumo_resultado,
+      "Ignoradas"
+    );
+
+    // Erros efetivamente registrados por item.
+    const erros = Number(
+      contagemErros[0]?.total_erros || 0
+    );
+
+    const ignorados = ignoradosResumo ?? 0;
+
+    /*
+     * O ETL atual registra "Linhas lidas" e "Ignoradas"
+     * no resumo_resultado.
+     *
+     * Quando não existir esse resumo, utilizamos os dados
+     * disponíveis como alternativa.
+     */
+    const totalProcessados =
+      totalLidas ?? (importados + ignorados + erros);
+
+    // Diferença entre o total processado e as categorias conhecidas.
+    const outros = Math.max(
+      0,
+      totalProcessados - importados - ignorados - erros
+    );
+
+    return res.json({
+      importacao,
+
+      itens,
+
+      acoes,
+
+      amostraCenso,
+
+      resumoItens: {
+        total_processados: totalProcessados,
+        importados,
+        ignorados,
+        erros,
+        outros,
+      },
+
+      totaisDestino: {
+        registros_criminais: registrosCriminais,
+        registros_censo: registrosCenso,
+      },
+    });
   } catch (error) {
-    return enviarErro(res, error, "Erro ao carregar detalhes da importação.");
+    return enviarErro(
+      res,
+      error,
+      "Erro ao carregar detalhes da importação."
+    );
   }
 };
 
@@ -284,13 +508,18 @@ export const criarImportacao = async (req, res) => {
 
   try {
     const contaId = obterContaId(req);
-    const tipo = String(req.body.tipo || "ssp").toLowerCase();
+
+    const tipo = String(
+      req.body.tipo || "ssp"
+    ).toLowerCase();
 
     const paginaOrigem = req.body.pagina_origem
       ? String(req.body.pagina_origem).trim()
       : null;
 
-    const anoCenso = Number(req.body.ano_censo || 2022);
+    const anoCenso = Number(
+      req.body.ano_censo || 2022
+    );
 
     const nomeOriginal = Buffer
       .from(arquivo.originalname, "latin1")
@@ -304,7 +533,9 @@ export const criarImportacao = async (req, res) => {
         anoCenso < 1900 ||
         anoCenso > 2100
       ) {
-        return res.status(400).json({ error: "Ano do Censo inválido." });
+        return res.status(400).json({
+          error: "Ano do Censo inválido.",
+        });
       }
 
       resultado = await importarPlanilhaCenso({
@@ -329,7 +560,11 @@ export const criarImportacao = async (req, res) => {
 
     return res.status(201).json(resultado);
   } catch (error) {
-    return enviarErro(res, error, "Erro ao processar a planilha.");
+    return enviarErro(
+      res,
+      error,
+      "Erro ao processar a planilha."
+    );
   } finally {
     if (arquivo?.path) {
       await fs.unlink(arquivo.path).catch(() => {});
@@ -343,7 +578,9 @@ export const atualizarImportacao = async (req, res) => {
   const id = parseId(req.params.id);
 
   if (!id) {
-    return res.status(400).json({ error: "ID de importação inválido." });
+    return res.status(400).json({
+      error: "ID de importação inválido.",
+    });
   }
 
   let conn;
@@ -352,7 +589,9 @@ export const atualizarImportacao = async (req, res) => {
     const contaAcao = obterContaId(req);
 
     await garantirEstruturaImportacoes();
+
     conn = await alertabcPool.getConnection();
+
     await conn.beginTransaction();
 
     const {
@@ -365,26 +604,36 @@ export const atualizarImportacao = async (req, res) => {
     } = req.body;
 
     const [[atual]] = await conn.query(
-      `SELECT id_importacao, nome_arquivo
-       FROM importacoes
-       WHERE id_importacao = ?
-       FOR UPDATE`,
+      `SELECT
+        id_importacao,
+        nome_arquivo
+
+      FROM importacoes
+
+      WHERE id_importacao = ?
+
+      FOR UPDATE`,
       [id]
     );
 
     if (!atual) {
       await conn.rollback();
-      return res.status(404).json({ error: "Importação não encontrada." });
+
+      return res.status(404).json({
+        error: "Importação não encontrada.",
+      });
     }
 
     await conn.query(
       `UPDATE importacoes
+
        SET nome_arquivo = ?,
            pagina_origem = ?,
            inicio_periodo = ?,
            fim_periodo = ?,
            situacao = ?,
            resumo_resultado = ?
+
        WHERE id_importacao = ?`,
       [
         nome_arquivo || atual.nome_arquivo,
@@ -399,8 +648,14 @@ export const atualizarImportacao = async (req, res) => {
 
     await conn.query(
       `INSERT INTO acoes_administrativas
-        (tipo, detalhes, fk_id_conta_responsavel,
-         fk_id_conta_afetada, fk_id_importacao)
+        (
+          tipo,
+          detalhes,
+          fk_id_conta_responsavel,
+          fk_id_conta_afetada,
+          fk_id_importacao
+        )
+
        VALUES (?, ?, ?, NULL, ?)`,
       [
         "EDICAO_IMPORTACAO",
@@ -412,10 +667,19 @@ export const atualizarImportacao = async (req, res) => {
 
     await conn.commit();
 
-    return res.json({ message: "Importação atualizada com sucesso." });
+    return res.json({
+      message: "Importação atualizada com sucesso.",
+    });
   } catch (error) {
-    if (conn) await conn.rollback().catch(() => {});
-    return enviarErro(res, error, "Erro ao atualizar importação.");
+    if (conn) {
+      await conn.rollback().catch(() => {});
+    }
+
+    return enviarErro(
+      res,
+      error,
+      "Erro ao atualizar importação."
+    );
   } finally {
     conn?.release();
   }
@@ -427,62 +691,100 @@ export const excluirImportacao = async (req, res) => {
   const id = parseId(req.params.id);
 
   if (!id) {
-    return res.status(400).json({ error: "ID de importação inválido." });
+    return res.status(400).json({
+      error: "ID de importação inválido.",
+    });
   }
 
   let conn;
 
   try {
     const contaAcao = obterContaId(req);
+
     await garantirEstruturaImportacoes();
 
     conn = await alertabcPool.getConnection();
+
     await conn.beginTransaction();
 
     const [[atual]] = await conn.query(
-      `SELECT id_importacao, nome_arquivo, fk_id_fonte, excluida_em
+      `SELECT
+        id_importacao,
+        nome_arquivo,
+        fk_id_fonte,
+        excluida_em
+
        FROM importacoes
+
        WHERE id_importacao = ?
+
        FOR UPDATE`,
       [id]
     );
 
     if (!atual) {
       await conn.rollback();
-      return res.status(404).json({ error: "Importação não encontrada." });
+
+      return res.status(404).json({
+        error: "Importação não encontrada.",
+      });
     }
 
     if (atual.excluida_em) {
       await conn.rollback();
-      return res.status(400).json({ error: "Esta importação já está na lixeira." });
+
+      return res.status(400).json({
+        error: "Esta importação já está na lixeira.",
+      });
     }
 
     await conn.query(
-      `UPDATE registro_oficial SET ativo = 0 WHERE fk_id_importacao = ?`,
+      `UPDATE registro_oficial
+
+       SET ativo = 0
+
+       WHERE fk_id_importacao = ?`,
       [id]
     );
 
     await conn.query(
-      `UPDATE censo_demografico SET ativo = 0 WHERE fk_id_importacao = ?`,
+      `UPDATE censo_demografico
+
+       SET ativo = 0
+
+       WHERE fk_id_importacao = ?`,
       [id]
     );
 
     await conn.query(
       `UPDATE importacoes
+
        SET situacao = 'EXCLUIDA',
            excluida_em = CURRENT_TIMESTAMP
+
        WHERE id_importacao = ?`,
       [id]
     );
 
-    const ehCenso = await verificarFonteCenso(conn, atual.fk_id_fonte);
+    const ehCenso = await verificarFonteCenso(
+      conn,
+      atual.fk_id_fonte
+    );
 
-    if (ehCenso) await recalcularPopulacaoRegistros(conn);
+    if (ehCenso) {
+      await recalcularPopulacaoRegistros(conn);
+    }
 
     await conn.query(
       `INSERT INTO acoes_administrativas
-        (tipo, detalhes, fk_id_conta_responsavel,
-         fk_id_conta_afetada, fk_id_importacao)
+        (
+          tipo,
+          detalhes,
+          fk_id_conta_responsavel,
+          fk_id_conta_afetada,
+          fk_id_importacao
+        )
+
        VALUES (?, ?, ?, NULL, ?)`,
       [
         "EXCLUSAO_IMPORTACAO",
@@ -498,8 +800,15 @@ export const excluirImportacao = async (req, res) => {
       message: "Importação movida para a lixeira.",
     });
   } catch (error) {
-    if (conn) await conn.rollback().catch(() => {});
-    return enviarErro(res, error, "Erro ao excluir importação.");
+    if (conn) {
+      await conn.rollback().catch(() => {});
+    }
+
+    return enviarErro(
+      res,
+      error,
+      "Erro ao excluir importação."
+    );
   } finally {
     conn?.release();
   }
@@ -511,50 +820,77 @@ export const restaurarImportacao = async (req, res) => {
   const id = parseId(req.params.id);
 
   if (!id) {
-    return res.status(400).json({ error: "ID de importação inválido." });
+    return res.status(400).json({
+      error: "ID de importação inválido.",
+    });
   }
 
   let conn;
 
   try {
     const contaAcao = obterContaId(req);
+
     await garantirEstruturaImportacoes();
 
     conn = await alertabcPool.getConnection();
+
     await conn.beginTransaction();
 
     const [[atual]] = await conn.query(
-      `SELECT id_importacao, nome_arquivo, fk_id_fonte, excluida_em
+      `SELECT
+        id_importacao,
+        nome_arquivo,
+        fk_id_fonte,
+        excluida_em
+
        FROM importacoes
+
        WHERE id_importacao = ?
+
        FOR UPDATE`,
       [id]
     );
 
     if (!atual) {
       await conn.rollback();
-      return res.status(404).json({ error: "Importação não encontrada." });
+
+      return res.status(404).json({
+        error: "Importação não encontrada.",
+      });
     }
 
     if (!atual.excluida_em) {
       await conn.rollback();
-      return res.status(400).json({ error: "Esta importação já está ativa." });
+
+      return res.status(400).json({
+        error: "Esta importação já está ativa.",
+      });
     }
 
     await conn.query(
-      `UPDATE registro_oficial SET ativo = 1 WHERE fk_id_importacao = ?`,
+      `UPDATE registro_oficial
+
+       SET ativo = 1
+
+       WHERE fk_id_importacao = ?`,
       [id]
     );
 
     await conn.query(
-      `UPDATE censo_demografico SET ativo = 1 WHERE fk_id_importacao = ?`,
+      `UPDATE censo_demografico
+
+       SET ativo = 1
+
+       WHERE fk_id_importacao = ?`,
       [id]
     );
 
     await conn.query(
       `UPDATE importacoes
+
        SET situacao = 'CONCLUIDA',
            excluida_em = NULL
+
        WHERE id_importacao = ?`,
       [id]
     );
@@ -563,8 +899,14 @@ export const restaurarImportacao = async (req, res) => {
 
     await conn.query(
       `INSERT INTO acoes_administrativas
-        (tipo, detalhes, fk_id_conta_responsavel,
-         fk_id_conta_afetada, fk_id_importacao)
+        (
+          tipo,
+          detalhes,
+          fk_id_conta_responsavel,
+          fk_id_conta_afetada,
+          fk_id_importacao
+        )
+
        VALUES (?, ?, ?, NULL, ?)`,
       [
         "RESTAURACAO_IMPORTACAO",
@@ -580,8 +922,15 @@ export const restaurarImportacao = async (req, res) => {
       message: "Importação e registros vinculados restaurados com sucesso.",
     });
   } catch (error) {
-    if (conn) await conn.rollback().catch(() => {});
-    return enviarErro(res, error, "Erro ao restaurar importação.");
+    if (conn) {
+      await conn.rollback().catch(() => {});
+    }
+
+    return enviarErro(
+      res,
+      error,
+      "Erro ao restaurar importação."
+    );
   } finally {
     conn?.release();
   }
@@ -593,7 +942,9 @@ export const excluirPermanentemente = async (req, res) => {
   const id = parseId(req.params.id);
 
   if (!id) {
-    return res.status(400).json({ error: "ID de importação inválido." });
+    return res.status(400).json({
+      error: "ID de importação inválido.",
+    });
   }
 
   let conn;
@@ -601,61 +952,94 @@ export const excluirPermanentemente = async (req, res) => {
 
   try {
     const contaAcao = obterContaId(req);
+
     await garantirEstruturaImportacoes();
 
     conn = await alertabcPool.getConnection();
+
     await conn.beginTransaction();
 
     const [[atual]] = await conn.query(
-      `SELECT id_importacao, nome_arquivo, caminho_arquivo, fk_id_fonte
+      `SELECT
+        id_importacao,
+        nome_arquivo,
+        caminho_arquivo,
+        fk_id_fonte
+
        FROM importacoes
+
        WHERE id_importacao = ?
+
        FOR UPDATE`,
       [id]
     );
 
     if (!atual) {
       await conn.rollback();
-      return res.status(404).json({ error: "Importação não encontrada." });
+
+      return res.status(404).json({
+        error: "Importação não encontrada.",
+      });
     }
 
     caminhoArquivo = atual.caminho_arquivo;
 
-    const ehCenso = await verificarFonteCenso(conn, atual.fk_id_fonte);
-
-    await conn.query(
-      `DELETE FROM registro_oficial WHERE fk_id_importacao = ?`,
-      [id]
+    const ehCenso = await verificarFonteCenso(
+      conn,
+      atual.fk_id_fonte
     );
 
     await conn.query(
-      `DELETE FROM censo_demografico WHERE fk_id_importacao = ?`,
-      [id]
-    );
+      `DELETE FROM registro_oficial
 
-    await conn.query(
-      `DELETE FROM item_importacao WHERE fk_id_importacao = ?`,
-      [id]
-    );
-
-    await conn.query(
-      `UPDATE acoes_administrativas
-       SET fk_id_importacao = NULL
        WHERE fk_id_importacao = ?`,
       [id]
     );
 
     await conn.query(
-      `DELETE FROM importacoes WHERE id_importacao = ?`,
+      `DELETE FROM censo_demografico
+
+       WHERE fk_id_importacao = ?`,
       [id]
     );
 
-    if (ehCenso) await recalcularPopulacaoRegistros(conn);
+    await conn.query(
+      `DELETE FROM item_importacao
+
+       WHERE fk_id_importacao = ?`,
+      [id]
+    );
+
+    await conn.query(
+      `UPDATE acoes_administrativas
+
+       SET fk_id_importacao = NULL
+
+       WHERE fk_id_importacao = ?`,
+      [id]
+    );
+
+    await conn.query(
+      `DELETE FROM importacoes
+
+       WHERE id_importacao = ?`,
+      [id]
+    );
+
+    if (ehCenso) {
+      await recalcularPopulacaoRegistros(conn);
+    }
 
     await conn.query(
       `INSERT INTO acoes_administrativas
-        (tipo, detalhes, fk_id_conta_responsavel,
-         fk_id_conta_afetada, fk_id_importacao)
+        (
+          tipo,
+          detalhes,
+          fk_id_conta_responsavel,
+          fk_id_conta_afetada,
+          fk_id_importacao
+        )
+
        VALUES (?, ?, ?, NULL, NULL)`,
       [
         "EXCLUSAO_PERMANENTE_IMPORTACAO",
@@ -668,7 +1052,10 @@ export const excluirPermanentemente = async (req, res) => {
 
     if (caminhoArquivo) {
       await fs.unlink(caminhoArquivo).catch((error) => {
-        console.error("Não foi possível remover o arquivo físico:", error);
+        console.error(
+          "Não foi possível remover o arquivo físico:",
+          error
+        );
       });
     }
 
@@ -676,8 +1063,15 @@ export const excluirPermanentemente = async (req, res) => {
       message: "Importação removida permanentemente do banco e do disco.",
     });
   } catch (error) {
-    if (conn) await conn.rollback().catch(() => {});
-    return enviarErro(res, error, "Erro ao excluir importação permanentemente.");
+    if (conn) {
+      await conn.rollback().catch(() => {});
+    }
+
+    return enviarErro(
+      res,
+      error,
+      "Erro ao excluir importação permanentemente."
+    );
   } finally {
     conn?.release();
   }
@@ -690,14 +1084,20 @@ export const baixarArquivoImportacao = async (req, res) => {
     const id = parseId(req.params.id);
 
     if (!id) {
-      return res.status(400).json({ error: "ID de importação inválido." });
+      return res.status(400).json({
+        error: "ID de importação inválido.",
+      });
     }
 
     await garantirEstruturaImportacoes();
 
     const [[atual]] = await alertabcPool.query(
-      `SELECT nome_arquivo, caminho_arquivo
+      `SELECT
+        nome_arquivo,
+        caminho_arquivo
+
        FROM importacoes
+
        WHERE id_importacao = ?`,
       [id]
     );
@@ -711,12 +1111,21 @@ export const baixarArquivoImportacao = async (req, res) => {
     try {
       await fs.access(atual.caminho_arquivo);
     } catch {
-      return res.status(404).json({ error: "Arquivo não encontrado no servidor." });
+      return res.status(404).json({
+        error: "Arquivo não encontrado no servidor.",
+      });
     }
 
-    return res.download(atual.caminho_arquivo, atual.nome_arquivo);
+    return res.download(
+      atual.caminho_arquivo,
+      atual.nome_arquivo
+    );
   } catch (error) {
-    return enviarErro(res, error, "Erro ao baixar arquivo.");
+    return enviarErro(
+      res,
+      error,
+      "Erro ao baixar arquivo."
+    );
   }
 };
 
@@ -727,7 +1136,9 @@ export async function confirmarImportacaoHandler(req, res) {
     const idImportacao = parseId(req.params.id);
 
     if (!idImportacao) {
-      return res.status(400).json({ error: "ID de importação inválido." });
+      return res.status(400).json({
+        error: "ID de importação inválido.",
+      });
     }
 
     const contaId = obterContaId(req);
@@ -739,7 +1150,11 @@ export async function confirmarImportacaoHandler(req, res) {
 
     return res.status(200).json(resultado);
   } catch (error) {
-    return enviarErro(res, error, "Erro ao confirmar importação.");
+    return enviarErro(
+      res,
+      error,
+      "Erro ao confirmar importação."
+    );
   }
 }
 
@@ -750,7 +1165,9 @@ export async function cancelarImportacaoHandler(req, res) {
     const idImportacao = parseId(req.params.id);
 
     if (!idImportacao) {
-      return res.status(400).json({ error: "ID de importação inválido." });
+      return res.status(400).json({
+        error: "ID de importação inválido.",
+      });
     }
 
     const contaId = obterContaId(req);
@@ -762,7 +1179,11 @@ export async function cancelarImportacaoHandler(req, res) {
 
     return res.status(200).json(resultado);
   } catch (error) {
-    return enviarErro(res, error, "Erro ao cancelar importação.");
+    return enviarErro(
+      res,
+      error,
+      "Erro ao cancelar importação."
+    );
   }
 }
 
@@ -773,7 +1194,9 @@ export async function obterItensImportacaoHandler(req, res) {
     const idImportacao = parseId(req.params.id);
 
     if (!idImportacao) {
-      return res.status(400).json({ error: "ID de importação inválido." });
+      return res.status(400).json({
+        error: "ID de importação inválido.",
+      });
     }
 
     const dados = await listarItensImportacao(idImportacao, {
@@ -784,6 +1207,10 @@ export async function obterItensImportacaoHandler(req, res) {
 
     return res.status(200).json(dados);
   } catch (error) {
-    return enviarErro(res, error, "Erro ao consultar itens da importação.");
+    return enviarErro(
+      res,
+      error,
+      "Erro ao consultar itens da importação."
+    );
   }
 }
